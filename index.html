@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>果凍快醒醒 - 完美合成版</title>
+    <title>果凍快醒醒 - 絕對修復版</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #2b303b; --panel: rgba(30,34,40,0.95); --accent: #ebcb8b; --danger: #bf616a; --success: #a3be8c; --rare: #b48ead; }
@@ -29,10 +29,9 @@
         .skill-icon {
             width: 45px; height: 45px; background: linear-gradient(135deg, #434c5e, #2e3440); border-radius: 10px; border: 2px solid #4c566a;
             display: flex; align-items: center; justify-content: center; font-size: 24px; position: relative;
-            flex-shrink: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            flex-shrink: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.3); color: #fff;
         }
         .skill-icon.synthesis { border-color: var(--rare); box-shadow: 0 0 10px var(--rare); animation: pulse 2s infinite; }
-        .skill-lv { position: absolute; bottom: -2px; right: 2px; font-size: 10px; font-weight: bold; color: #fff; text-shadow: 1px 1px 0 #000; }
 
         /* 選單與卡片 */
         .screen { position: absolute; top:0; left:0; width:100%; height:100%; background: var(--panel); pointer-events: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); z-index: 20; }
@@ -54,8 +53,6 @@
         .big-btn:active { transform: translateY(2px); border-bottom-width: 2px; }
 
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        .float-text { position: absolute; pointer-events: none; font-weight: bold; text-shadow: 1px 1px 0 #000; animation: floatUp 0.8s ease-out forwards; white-space: nowrap; }
-        @keyframes floatUp { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-40px); opacity: 0; } }
     </style>
 </head>
 <body>
@@ -67,18 +64,15 @@
         <div class="pill">🌊 Wave <span id="wave-display">1</span></div>
         <div class="pill">💀 Kills <span id="kill-display">0</span></div>
     </div>
-    
-    <div id="active-skills">
-        <!-- JS 生成技能圖標 -->
-    </div>
+    <div id="active-skills"></div>
 </div>
 
 <!-- 主選單 -->
 <div id="main-menu" class="screen">
-    <h1 style="color:var(--accent); font-size:36px; margin-bottom:10px;">🔮 果凍快醒醒：合成版</h1>
-    <p style="color:#d8dee9; margin-bottom:30px;">選擇技能，達成條件，觸發隱藏合成！</p>
+    <h1 style="color:var(--accent); font-size:36px; margin-bottom:10px;">🔮 果凍快醒醒</h1>
+    <p style="color:#d8dee9; margin-bottom:30px;">合成版 v2.0 (修復顯示問題)</p>
     <div style="text-align:left; font-size:14px; color:#aaa; margin-bottom:20px; line-height:1.6; background:rgba(0,0,0,0.3); padding:15px; border-radius:10px;">
-        💡 <b>合成公式提示：</b><br>
+        💡 <b>合成公式：</b><br>
         🔥 火焰飛彈 = 奧術飛彈 + 火球術<br>
         🌪️ 閃電龍捲 = 龍捲風 + 閃電鏈<br>
         ❄️ 冰霜新星 = 滾木 + 冰錐術<br>
@@ -102,59 +96,44 @@
 </div>
 
 <script>
-/* ==================== 1. 美術資源 (SVG) ==================== */
-const SVG_ASSETS = {
-    cat: `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDEyMCAxMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHJhZGlhbEdyYWRpZW50IGlkPSJqZWxseUdyYWRpZW50IiBjeD0iNTAlIiBjeT0iNDAlIiByPSI1MCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNGRkU0RjAiLz48cGF0aCBkPSJNMzAgMzUgTDE4IDEwIEw0MCAyNSBaIiBmaWxsPSIjRkY5QUNCIi8+PHBhdGggZD0iTTkwIDM1IEwxMDIgMTAgTDgwIDI1IFoiIGZpbGw9IiNGRjlBQ0IiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjY1IiByPSI0MiIgZmlsbD0idXJsKCNqZWxseUdyYWRpZW50KSIvPjxlbGxpcHNlIGN4PSI0NSIgY3k9IjYwIiByeD0iNiIgcnk9IjEwIiBmaWxsPSIjMzMzIi8+PGVsbGlwc2UgY3g9Ijc1IiBjeT0iNjAiIHJ4PSI2IiByeT0iMTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI0MyIgY3k9IjU2IiByPSIyIiBmaWxsPSJ3aGl0ZSIvPjxjaXJjbGUgY3g9IjczIiBjeT0iNTYiIHI9IjIiIGZpbGw9IndoaXRlIi8+PHBhdGggZD0iTTUyIDc4IFE2MCA4NSA2OCA3OCIgc3Ryb2tlPSIjMzMzIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxlbGxpcHNlIGN4PSIzMCIgY3k9Ijc1IiByeD0iNiIgcnk9IjQiIGZpbGw9IiNGRjdCOTkiIG9wYWNpdHk9IjAuNiIvPjxlbGxpcHNlIGN4PSI5MCIgY3k9Ijc1IiByeD0iNiIgcnk9IjQiIGZpbGw9IiNGRjdCOTkiIG9wYWNpdHk9IjAuNiIvPjwvc3ZnPg==`,
-    slime: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNNTAsMjAgQzIwLDIwIDEwLDYwIDEwLDgwIEMxMCw5MCAzMCw5NSA1MCw5NSBDNzAsOTUgOTAsOTAgOTAsODAgQzkwLDYwIDgwLDIwIDUwLDIwIFoiIGZpbGw9IiNhM2JlOGMiIHN0cm9rZT0iIzJmMzQ0MCIgc3Ryb2tlLXdpZHRoPSIyIi8+PGNpcmNsZSBjeD0iMzUiIGN5PSI1MCIgcj0iNSIgZmlsbD0iIzJmMzQ0MCIvPjxjaXJjbGUgY3g9IjY1IiBjeT0iNTAiIHI9IjUiIGZpbGw9IiMyZjM0NDAiLz48L3N2Zz4=`,
-    bat: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNMTAsNDAgUTMwLDEwIDUwLDQwIFE3MCwxMCA5MCw0MCBMODAsODAgTDIwLDgwIFoiIGZpbGw9IiNiNDhlYWQiIHN0cm9rZT0iIzJmMzQ0MCIgc3Ryb2tlLXdpZHRoPSIyIi8+PGNpcmNsZSBjeD0iMzUiIGN5PSI1NSIgcj0iNCIgZmlsbD0iI2ViY2I4YiIvPjxjaXJjbGUgY3g9IjY1IiBjeT0iNTUiIHI9IjQiIGZpbGw9IiNlYmNiOGIiLz48L3N2Zz4=`,
-    boss: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNMzAsMjAgTDQwLDUgTDUwLDIwIEw2MCw1IEw3MCwyMCBaIiBmaWxsPSIjZWJjYjhiIiBzdHJva2U9IiMyZjM0NDAiIHN0cm9rZS13aWR0aD0iMiIvPjxwYXRoIGQ9Ik01MCwyNSBDMTUsMjUgNSw3NSA1LDkwIEM1LDk4IDMwLDk4IDUwLDk4IEM3MCw5OCA5NSw5OCA5NSw5MCBDOTUsNzUgODUsMjUgNTAsMjUgWiIgZmlsbD0iI2JmNjE2YSIgc3Ryb2tlPSIjYTM0ZTU0IiBzdHJva2Utd2lkdGg9IjMiLz48cGF0aCBkPSJNMzAsNTAgTDQwLDYwIEwzMCw3MCIgZmlsbD0iIzJlMzQ0MCIvPjxwYXRoIGQ9Ik03MCw1MCBMNjAsNjAgTDcwLDcwIiBmaWxsPSIjMmUzNDQwIi8+PC9zdmc+`,
-    fireball: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MCA1MCI+PHBhdGggZD0iTTI1LDUgQzEwLDI1IDUsMzAgNSw0MCBDNSw1MiA0NSw1MiA0NSw0MCBDNDUsMzAgNDAsMjUgMjUsNSBaIiBmaWxsPSIjZDA4NzcwIiBzdHJva2U9IiNmMzkzMzAiIHN0cm9rZS13aWR0aD0iMiIvPjwvc3ZnPg==`,
-    ice: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MCA1MCI+PHBhdGggZD0iTTI1LDUgTDI1LDQ1IE01LDI1IEw0NSwyNSBNMTAsMTAgTDQwLDQwIE00MCwxMCBMMTAsNDAiIHN0cm9rZT0iIzg4YzBkMCIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=`,
-    lightning: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MCA1MCI+PHBhdGggZD0iTTI1LDUgTDEwLDI1IEwyNSwyNSBMMjAsNDUgTDM1LDI1IEwyMCwyNSBaIiBmaWxsPSIjZWJjYjhiIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIvPjwvc3ZnPg==`
+/* ==================== 1. 圖片資源 (Data URI) ==================== */
+const SVG_SRC = {
+    cat: `data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='60' r='35' fill='%23ff9acb'/%3E%3Cpath d='M20 35 L30 5 L50 25 Z' fill='%23ff9acb'/%3E%3Cpath d='M80 35 L70 5 L50 25 Z' fill='%23ff9acb'/%3E%3Ccircle cx='35' cy='55' r='5' fill='%23333'/%3E%3Ccircle cx='65' cy='55' r='5' fill='%23333'/%3E%3Cpath d='M45 65 Q50 70 55 65' fill='none' stroke='%23333' stroke-width='2'/%3E%3C/svg%3E`,
+    slime: `data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 20 Q10 20 10 80 Q10 95 50 95 Q90 95 90 80 Q90 20 50 20 Z' fill='%23a3be8c' stroke='%232f3440' stroke-width='2'/%3E%3Ccircle cx='35' cy='50' r='5' fill='%232f3440'/%3E%3Ccircle cx='65' cy='50' r='5' fill='%232f3440'/%3E%3C/svg%3E`,
+    bat: `data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M10 40 Q30 10 50 40 Q70 10 90 40 L50 80 Z' fill='%23b48ead'/%3E%3Ccircle cx='35' cy='50' r='4' fill='white'/%3E%3Ccircle cx='65' cy='50' r='4' fill='white'/%3E%3C/svg%3E`,
+    boss: `data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M30 20 L40 5 L50 20 L60 5 L70 20 Z' fill='%23ebcb8b'/%3E%3Ccircle cx='50' cy='60' r='38' fill='%23bf616a'/%3E%3Cpath d='M30 50 L40 60 L30 70' fill='%232e3440'/%3E%3Cpath d='M70 50 L60 60 L70 70' fill='%232e3440'/%3E%3C/svg%3E`
 };
 
 const IMAGES = {};
-function loadImages(cb) { 
-    let loaded = 0, total = Object.keys(SVG_ASSETS).length;
-    for(let k in SVG_ASSETS){ 
+function loadImages() { 
+    for(let k in SVG_SRC){ 
         let i = new Image(); 
-        i.src = SVG_ASSETS[k]; 
-        i.onload = () => { loaded++; if(loaded===total && cb) cb(); }
+        i.src = SVG_SRC[k]; 
         IMAGES[k] = i; 
     }
 }
 
-/* ==================== 2. 技能資料庫 (核心) ==================== */
+/* ==================== 2. 技能資料庫 ==================== */
 const SKILL_DB = {
-    // 基礎技能
     'arcane': { name: '奧術飛彈', type: 'active', icon: '🔹', desc: '發射追蹤飛彈', max: 1 },
-    'fireball': { name: '火球術', type: 'active', icon: '🔥', desc: '發射會爆炸的火球', max: 1 },
-    'ice': { name: '冰錐術', type: 'active', icon: '❄️', desc: '發射穿透冰錐，緩速敵人', max: 1 },
-    'lightning': { name: '雷擊術', type: 'active', icon: '⚡', desc: '召喚雷電攻擊單體', max: 1 },
-    'log': { name: '滾木', type: 'active', icon: '🪵', desc: '滾動木頭擊退敵人', max: 1 },
-    'tornado': { name: '龍捲風', type: 'active', icon: '🌪️', desc: '召喚龍捲風持續傷害', max: 1 },
-    'laser': { name: '聚焦激光', type: 'active', icon: '🔦', desc: '持續照射最近敵人', max: 1 },
-    'meteor': { name: '隕石術', type: 'active', icon: '☄️', desc: '召喚隕石造成大範圍傷害', max: 1 },
-    'chain_light': { name: '閃電鏈', type: 'active', icon: '🔗', desc: '在敵人之間彈跳的閃電', max: 1 },
-    'pulse': { name: '脈衝激光', type: 'active', icon: '〰️', desc: '發射橫向脈衝波', max: 1 },
-
-    // 進階技能
+    'fireball': { name: '火球術', type: 'active', icon: '🔥', desc: '爆炸火球', max: 1 },
+    'ice': { name: '冰錐術', type: 'active', icon: '❄️', desc: '穿透冰錐', max: 1 },
+    'lightning': { name: '雷擊術', type: 'active', icon: '⚡', desc: '單體雷擊', max: 1 },
+    'log': { name: '滾木', type: 'active', icon: '🪵', desc: '擊退敵人', max: 1 },
+    'tornado': { name: '龍捲風', type: 'active', icon: '🌪️', desc: '持續傷害', max: 1 },
+    'laser': { name: '聚焦激光', type: 'active', icon: '🔦', desc: '持續光束', max: 1 },
+    'meteor': { name: '隕石術', type: 'active', icon: '☄️', desc: '大範圍傷害', max: 1 },
+    'chain_light': { name: '閃電鏈', type: 'active', icon: '🔗', desc: '彈跳閃電', max: 1 },
+    
+    // 進階與合成
     'arc_dmg': { name: '飛彈增幅', req: 'arcane', desc: '飛彈傷害 +60%' },
-    'arc_count': { name: '飛彈連發', req: 'arcane', desc: '飛彈數量 +1，傷害 -20%' },
-    'arc_explode': { name: '爆炸飛彈', req: 'arc_dmg', desc: '飛彈命中後產生小爆炸' },
-    'fire_dmg': { name: '火球爆破', req: 'fireball', desc: '火球傷害 +80%' },
+    'arc_count': { name: '飛彈連發', req: 'arcane', desc: '飛彈數量 +1' },
     'fire_boom': { name: '火球爆燃', req: 'fireball', desc: '爆炸範圍 +80%' },
-    'fire_multi': { name: '連珠火球', req: 'fireball', desc: '額外施放 1 次火球' },
-    'ice_split': { name: '冰錐分裂', req: 'ice', desc: '冰錐命中後分裂成小冰錐' },
-    'ice_freeze': { name: '極寒冰錐', req: 'ice', desc: '命中凍結敵人 1 秒' },
-    'wind_duration': { name: '強襲風暴', req: 'tornado', desc: '龍捲風持續時間 +50%' },
-
-    // 合成技能
-    'syn_flame_missile': { name: '🔥 火焰飛彈', type: 'syn', icon: '🟣', req: ['arcane', 'fireball'], desc: '【合成】奧術飛彈附帶燃燒與爆炸效果' },
-    'syn_lightning_tornado': { name: '⛈️ 閃電龍捲', type: 'syn', icon: '🟣', req: ['tornado', 'chain_light'], desc: '【合成】龍捲風現在會電擊內部敵人' },
-    'syn_frost_log': { name: '❄️ 冰霜新星', type: 'syn', icon: '🟣', req: ['log', 'ice'], desc: '【合成】滾木路徑留下冰霜，凍結敵人' },
-    'syn_burn_meteor': { name: '🌋 燃燒隕石', type: 'syn', icon: '🟣', req: ['meteor', 'fireball'], desc: '【合成】隕石落地後燃燒地面' },
-    'syn_guided_missile': { name: '🚀 制導飛彈', type: 'syn', icon: '🟣', req: ['laser', 'arcane'], desc: '【合成】聚焦激光現在會發射追蹤導彈' }
+    'syn_flame_missile': { name: '🔥 火焰飛彈', type: 'syn', icon: '🟣', req: ['arcane', 'fireball'], desc: '合成：奧術+火球' },
+    'syn_lightning_tornado': { name: '⛈️ 閃電龍捲', type: 'syn', icon: '🟣', req: ['tornado', 'chain_light'], desc: '合成：龍捲+閃電鏈' },
+    'syn_frost_log': { name: '❄️ 冰霜新星', type: 'syn', icon: '🟣', req: ['log', 'ice'], desc: '合成：滾木+冰錐' },
+    'syn_burn_meteor': { name: '🌋 燃燒隕石', type: 'syn', icon: '🟣', req: ['meteor', 'fireball'], desc: '合成：隕石+火球' },
+    'syn_guided_missile': { name: '🚀 制導飛彈', type: 'syn', icon: '🟣', req: ['laser', 'arcane'], desc: '合成：激光+奧術' }
 };
 
 /* ==================== 3. 遊戲引擎 ==================== */
@@ -169,17 +148,18 @@ const Game = {
     enemies: [], projectiles: [], texts: [],
     skills: {}, stats: { atk: 10, cd_mod: 1 },
     
-    jelly: { x: 0, y: 0 }, // 貓咪位置
+    jelly: { x: 0, y: 0 },
 
     init() {
         this.ctx = this.canvas.getContext('2d');
         this.resize();
         window.addEventListener('resize', () => this.resize());
-        loadImages(() => {
-            // 圖片載入完成後初始化
-            this.jelly.x = this.width / 2;
-            this.jelly.y = this.height - 100;
-        });
+        loadImages(); // 啟動圖片載入
+        
+        // 立即設定初始座標，不等待圖片
+        this.jelly.x = this.width / 2;
+        this.jelly.y = this.height - 100;
+
         requestAnimationFrame(t => this.loop(t));
     },
     resize() {
@@ -206,6 +186,8 @@ const Game = {
         if(this.state !== 'PLAYING') return requestAnimationFrame(t => this.loop(t));
         let dt = (t - this.lastTime) / 1000;
         this.lastTime = t;
+        if (dt > 0.1) dt = 0.1; // 防止切換分頁時時間爆衝
+        
         this.update(dt);
         this.draw();
         requestAnimationFrame(t => this.loop(t));
@@ -219,7 +201,7 @@ const Game = {
             this.spawnTimer = 0;
         }
 
-        // 技能冷卻與施放
+        // 技能冷卻
         for(let id in this.skills) {
             let data = SKILL_DB[id];
             if(data.type === 'active' || data.type === 'syn') {
@@ -227,26 +209,26 @@ const Game = {
                 this.skills[id].cooldown -= dt;
                 if(this.skills[id].cooldown <= 0) {
                     this.castSkill(id);
-                    let baseCd = (id === 'laser' ? 0.5 : (id === 'meteor' ? 4.0 : (id === 'log' ? 3.0 : 1.5)));
+                    let baseCd = (id==='laser'?0.5 : (id==='meteor'?4.0 : (id==='log'?3.0 : 1.5)));
                     this.skills[id].cooldown = baseCd * this.stats.cd_mod; 
                 }
             }
         }
 
-        // 敵人更新
+        // 敵人
         this.enemies.forEach(e => {
             let slow = e.slowTimer > 0 ? 0.5 : 1;
             if(e.slowTimer > 0) e.slowTimer -= dt;
             if(e.freezeTimer > 0) { e.freezeTimer -= dt; slow = 0; }
             e.y += e.speed * slow * dt;
-            if(e.y > this.height - 50) { // 碰到城牆
+            if(e.y > this.height - 50) { 
                 this.hp -= 10; e.dead = true;
                 this.spawnText(this.width/2, this.height-120, "-10 HP", "red", 30);
                 if(this.hp <= 0) this.gameOver();
             }
         });
 
-        // 投射物更新
+        // 投射物
         this.projectiles.forEach(p => {
             if(p.target && p.target.dead) p.target = null;
             if(p.homing && p.target) {
@@ -256,7 +238,6 @@ const Game = {
             }
             p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
             
-            // 碰撞
             for(let e of this.enemies) {
                 if(!e.dead && Math.hypot(p.x - e.x, p.y - e.y) < e.r + p.r) {
                     this.hitEnemy(e, p);
@@ -280,61 +261,61 @@ const Game = {
 
         // 城牆
         ctx.fillStyle = '#3b4252'; ctx.fillRect(0, this.height - 50, this.width, 50);
-        // 磚紋
-        ctx.strokeStyle = '#4c566a'; ctx.beginPath();
-        for(let i=0; i<this.width; i+=40) { ctx.moveTo(i, this.height-50); ctx.lineTo(i, this.height); }
-        ctx.stroke();
-        // 血條
+        ctx.strokeStyle = '#4c566a'; ctx.lineWidth = 2;
+        ctx.beginPath(); for(let i=0; i<this.width; i+=40) { ctx.moveTo(i, this.height-50); ctx.lineTo(i, this.height); } ctx.stroke();
+        // HP Bar
         ctx.fillStyle = '#a3be8c'; ctx.fillRect(0, this.height - 55, this.width * (this.hp/100), 5);
 
-        // 畫貓咪 (Jelly)
-        if(IMAGES.cat) {
+        // 畫貓咪 (如果圖片還沒好，畫個粉紅圓)
+        if (IMAGES.cat && IMAGES.cat.complete && IMAGES.cat.naturalWidth !== 0) {
             let sz = 80;
             ctx.drawImage(IMAGES.cat, this.jelly.x - sz/2, this.jelly.y - sz/2, sz, sz);
+        } else {
+            ctx.fillStyle = '#ff9acb';
+            ctx.beginPath(); ctx.arc(this.jelly.x, this.jelly.y, 30, 0, Math.PI*2); ctx.fill();
         }
 
-        // 畫敵人
+        // 畫敵人 (如果圖片還沒好，畫綠/紫/紅圓)
         this.enemies.forEach(e => {
             let img = IMAGES.slime;
-            if(e.type === 'bat') img = IMAGES.bat;
-            if(e.type === 'boss') img = IMAGES.boss;
+            let fallbackColor = '#a3be8c';
+            
+            if(e.type === 'bat') { img = IMAGES.bat; fallbackColor = '#b48ead'; }
+            if(e.type === 'boss') { img = IMAGES.boss; fallbackColor = '#bf616a'; }
 
-            if(e.freezeTimer > 0) ctx.globalAlpha = 0.6; // 凍結透明
-            if(img) ctx.drawImage(img, e.x - e.r, e.y - e.r, e.r*2, e.r*2);
+            if(e.freezeTimer > 0) ctx.globalAlpha = 0.6;
+
+            if(img && img.complete && img.naturalWidth !== 0) {
+                ctx.drawImage(img, e.x - e.r, e.y - e.r, e.r*2, e.r*2);
+            } else {
+                ctx.fillStyle = fallbackColor;
+                ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill();
+            }
             ctx.globalAlpha = 1.0;
 
-            // 怪物血條
+            // 血條
             let hpPct = e.hp/e.maxHp;
             ctx.fillStyle = 'red'; ctx.fillRect(e.x-15, e.y-e.r-8, 30, 4);
             ctx.fillStyle = '#a3be8c'; ctx.fillRect(e.x-15, e.y-e.r-8, 30*hpPct, 4);
         });
 
-        // 畫投射物
+        // 投射物
         this.projectiles.forEach(p => {
             ctx.save(); ctx.translate(p.x, p.y);
-            if(p.type === 'fireball' || p.type === 'missile') ctx.rotate(Math.atan2(p.vy, p.vx) + Math.PI/2);
-            
-            let img = null;
-            if(p.type === 'fireball') img = IMAGES.fireball;
-            if(p.type === 'ice') img = IMAGES.ice;
-            if(p.type === 'lightning') img = IMAGES.lightning;
-
-            if(img) {
-                ctx.drawImage(img, -p.r*2, -p.r*2, p.r*4, p.r*4);
+            if(p.emoji) {
+                ctx.font = (p.r*2) + "px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.fillText(p.emoji, 0, 0);
             } else {
-                // 沒有圖片的技能用 Emoji
-                ctx.font = (p.r*2) + "px Arial";
-                ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                ctx.fillText(p.emoji || '🟣', 0, 0);
+                ctx.fillStyle = p.color || '#fff';
+                ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI*2); ctx.fill();
             }
             ctx.restore();
         });
 
-        // 畫文字
+        // 文字
         this.texts.forEach(t => {
-            ctx.fillStyle = t.color;
-            ctx.font = "bold "+t.size+"px Fredoka";
-            ctx.fillText(t.text, t.x, t.y);
+            ctx.fillStyle = t.color; ctx.font = "bold "+t.size+"px Fredoka";
+            ctx.textAlign = "center"; ctx.fillText(t.text, t.x, t.y);
         });
     },
 
@@ -347,15 +328,14 @@ const Game = {
 
         this.enemies.push({
             x: Math.random() * (this.width - 40) + 20,
-            y: -30,
-            hp: hp, maxHp: hp, speed: speed, r: r,
+            y: -30, hp: hp, maxHp: hp, speed: speed, r: r,
             type: type, slowTimer: 0, freezeTimer: 0, dead: false
         });
     },
 
     castSkill(id) {
         let target = this.enemies[0];
-        if(!target && id !== 'meteor' && id !== 'log' && id !== 'tornado' && id !== 'syn_lightning_tornado') return;
+        if(!target && !['meteor','log','tornado','syn_lightning_tornado'].includes(id)) return;
         let dmg = this.stats.atk;
 
         switch(id) {
@@ -371,10 +351,7 @@ const Game = {
                 this.spawnProj(this.jelly.x, this.jelly.y, target, 'ice', dmg, '❄️', { pierce: true });
                 break;
             case 'lightning':
-                if(target) {
-                    this.spawnText(target.x, target.y-30, "⚡", "#ebcb8b", 40);
-                    this.hitEnemy(target, {dmg: dmg*2});
-                }
+                if(target) { this.spawnText(target.x, target.y-30, "⚡", "#ebcb8b", 40); this.hitEnemy(target, {dmg: dmg*2}); }
                 break;
             case 'log':
                 this.spawnProj(this.width/2, this.height-100, {x:this.width/2, y:-100}, 'log', dmg, '🪵', {r:30, pierce:true, speed:150});
@@ -386,7 +363,6 @@ const Game = {
                 let mx = Math.random()*this.width;
                 this.spawnProj(mx, -50, {x:mx, y:this.height/2}, 'meteor', dmg*3, '☄️', {r:40, speed:200, explode:100});
                 break;
-            // 合成技能
             case 'syn_flame_missile':
                 this.spawnProj(this.jelly.x, this.jelly.y, target, 'missile', dmg*2, '🟣', {homing:true, explode:60});
                 break;
@@ -436,7 +412,6 @@ const Game = {
         this.level++; this.exp = 0; this.nextExp = Math.floor(this.nextExp * 1.5);
         this.state = 'PAUSED';
         let pool = [];
-        // 檢查合成
         for(let id in SKILL_DB) {
             let s = SKILL_DB[id];
             if(s.type === 'syn' && !this.skills[id]) {
@@ -445,7 +420,6 @@ const Game = {
                 if(meet) pool.push(id);
             }
         }
-        // 檢查普通技能
         for(let id in SKILL_DB) {
             let s = SKILL_DB[id];
             if(s.type === 'syn' || (this.skills[id] && s.max && this.skills[id]>=s.max)) continue;
@@ -456,8 +430,7 @@ const Game = {
         for(let i=0; i<3; i++) {
             if(pool.length === 0) break;
             let idx = Math.floor(Math.random() * pool.length);
-            choices.push(pool[idx]);
-            pool.splice(idx, 1);
+            choices.push(pool[idx]); pool.splice(idx, 1);
         }
         if(choices.length === 0) choices.push('heal');
         this.renderCards(choices);
@@ -468,7 +441,7 @@ const Game = {
         let container = document.getElementById('card-list'); container.innerHTML = '';
         ids.forEach(id => {
             if(id === 'heal') {
-                container.innerHTML += `<div class="card" onclick="Game.hp+=30;Game.resume()"><h3>💖 恢復</h3><p>恢復 30% 生命值</p></div>`; return;
+                container.innerHTML += `<div class="card" onclick="Game.hp=Math.min(Game.maxHp, Game.hp+30);Game.resume()"><h3>💖 恢復</h3><p>恢復 30% 生命值</p></div>`; return;
             }
             let s = SKILL_DB[id];
             let div = document.createElement('div');
@@ -498,6 +471,7 @@ const Game = {
     }
 };
 
+// 初始化
 Game.init();
 </script>
 </body>
