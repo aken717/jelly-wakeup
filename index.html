@@ -3,56 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>果凍快醒醒 - 絕對修復版</title>
+    <title>果凍快醒醒 (測試加強版)</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #2b303b; --panel: rgba(30,34,40,0.95); --accent: #ebcb8b; --danger: #bf616a; --success: #a3be8c; --rare: #b48ead; }
-        * { box-sizing: border-box; user-select: none; }
-        body { margin: 0; background: #111; font-family: 'Fredoka', sans-serif; overflow: hidden; color: #eceff4; }
-        canvas { display: block; width: 100vw; height: 100vh; }
+        :root {
+            --bg: #2b303b; --panel: rgba(30,34,40,0.9); --accent: #ebcb8b; --danger: #bf616a;
+        }
+        body { margin: 0; background: #111; font-family: 'Fredoka', sans-serif; overflow: hidden; color: white; }
+        canvas { display: block; width: 100%; height: 100vh; }
 
-        /* UI 層 */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; }
+        /* UI 區域 */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         .interactive { pointer-events: auto; }
-        .hidden { display: none !important; }
 
-        /* HUD */
-        #hud { padding: 15px; display: flex; justify-content: space-between; font-size: 18px; text-shadow: 1px 1px 2px #000; z-index: 10; }
-        .pill { background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
-        
-        /* 技能狀態列 */
-        #active-skills { 
-            position: absolute; bottom: 60px; left: 10px; right: 10px; 
-            display: flex; gap: 5px; overflow-x: auto; padding: 5px;
-            pointer-events: auto; justify-content: center;
+        /* 右上角：倍速控制 */
+        #speed-panel {
+            position: absolute; top: 10px; right: 10px;
+            background: var(--panel); padding: 8px; border-radius: 10px;
+            display: flex; gap: 5px; flex-direction: column; align-items: center;
+            backdrop-filter: blur(4px); border: 1px solid #4c566a;
         }
-        .skill-icon {
-            width: 45px; height: 45px; background: linear-gradient(135deg, #434c5e, #2e3440); border-radius: 10px; border: 2px solid #4c566a;
-            display: flex; align-items: center; justify-content: center; font-size: 24px; position: relative;
-            flex-shrink: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.3); color: #fff;
+        .speed-btn {
+            background: #5e81ac; border: none; color: white; padding: 5px 10px;
+            border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 12px; width: 100%;
         }
-        .skill-icon.synthesis { border-color: var(--rare); box-shadow: 0 0 10px var(--rare); animation: pulse 2s infinite; }
+        .speed-btn.active { background: #88c0d0; color: #2e3440; font-weight: bold; box-shadow: 0 0 5px #88c0d0; }
 
-        /* 選單與卡片 */
-        .screen { position: absolute; top:0; left:0; width:100%; height:100%; background: var(--panel); pointer-events: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); z-index: 20; }
-        .card-container { display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; max-height: 70vh; overflow-y: auto; }
-        
-        .card { 
-            background: linear-gradient(135deg, #434c5e, #2e3440); 
-            border: 2px solid #81a1c1; border-radius: 12px; padding: 15px; 
-            cursor: pointer; text-align: left; position: relative; transition: 0.2s;
+        /* 左下角：被動抽卡 */
+        #passive-panel {
+            position: absolute; bottom: 20px; left: 20px;
+            background: var(--panel); padding: 15px; border-radius: 12px;
+            max-width: 200px; border: 1px solid #ebcb8b;
         }
-        .card:hover { transform: scale(1.02); border-color: var(--accent); }
-        .card.synthesis-card { background: linear-gradient(135deg, #5e3a5e, #2e3440); border-color: var(--rare); }
-        .card h3 { margin: 0 0 5px; color: #fff; display: flex; justify-content: space-between; }
-        .card p { margin: 0; font-size: 12px; color: #d8dee9; }
-        .tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #5e81ac; }
-        .tag.syn { background: var(--rare); }
+        #passive-list {
+            font-size: 12px; color: #d8dee9; margin-bottom: 10px;
+            max-height: 100px; overflow-y: auto; min-height: 20px;
+        }
+        #draw-btn {
+            background: var(--accent); color: #2e3440; border: none;
+            width: 100%; padding: 10px; border-radius: 8px;
+            font-weight: bold; cursor: pointer; font-size: 14px;
+            border-bottom: 3px solid #d08770;
+        }
+        #draw-btn:active { transform: translateY(2px); border-bottom: 0; }
 
-        .big-btn { background: var(--success); border: none; border-bottom: 4px solid #819c6e; color: #2e3440; font-weight: bold; padding: 15px 40px; border-radius: 12px; font-size: 20px; cursor: pointer; margin-top: 20px; }
-        .big-btn:active { transform: translateY(2px); border-bottom-width: 2px; }
-
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        /* 頂部資訊 */
+        #hud {
+            position: absolute; top: 10px; left: 10px;
+            font-size: 18px; text-shadow: 1px 1px 2px black;
+        }
     </style>
 </head>
 <body>
@@ -61,417 +60,274 @@
 
 <div id="ui-layer">
     <div id="hud">
-        <div class="pill">🌊 Wave <span id="wave-display">1</span></div>
-        <div class="pill">💀 Kills <span id="kill-display">0</span></div>
+        <div>Wave: <span id="wave-txt">1</span></div>
+        <div style="font-size:14px; color:#aaa">Enemies: <span id="count-txt">0</span></div>
     </div>
-    <div id="active-skills"></div>
-</div>
 
-<!-- 主選單 -->
-<div id="main-menu" class="screen">
-    <h1 style="color:var(--accent); font-size:36px; margin-bottom:10px;">🔮 果凍快醒醒</h1>
-    <p style="color:#d8dee9; margin-bottom:30px;">合成版 v2.0 (修復顯示問題)</p>
-    <div style="text-align:left; font-size:14px; color:#aaa; margin-bottom:20px; line-height:1.6; background:rgba(0,0,0,0.3); padding:15px; border-radius:10px;">
-        💡 <b>合成公式：</b><br>
-        🔥 火焰飛彈 = 奧術飛彈 + 火球術<br>
-        🌪️ 閃電龍捲 = 龍捲風 + 閃電鏈<br>
-        ❄️ 冰霜新星 = 滾木 + 冰錐術<br>
-        ☄️ 燃燒隕石 = 隕石術 + 火球術<br>
-        🚀 制導飛彈 = 聚焦激光 + 奧術飛彈
+    <!-- 倍速控制 -->
+    <div id="speed-panel" class="interactive">
+        <div style="font-size:10px; color:#aaa; margin-bottom:2px;">GAME SPEED</div>
+        <button class="speed-btn active" onclick="setSpeed(1, this)">x1</button>
+        <button class="speed-btn" onclick="setSpeed(2, this)">x2</button>
+        <button class="speed-btn" onclick="setSpeed(5, this)">x5</button>
+        <button class="speed-btn" onclick="setSpeed(10, this)">x10</button>
     </div>
-    <button class="big-btn" onclick="Game.start()">開始戰鬥</button>
-</div>
 
-<!-- 升級選單 -->
-<div id="level-up" class="screen hidden">
-    <h2 style="color:#fff;">✨ 技能選擇</h2>
-    <div id="card-list" class="card-container"></div>
-</div>
-
-<!-- 遊戲結束 -->
-<div id="game-over" class="screen hidden">
-    <h1 style="color:var(--danger);">GAME OVER</h1>
-    <p>存活波數: <span id="final-wave" style="color:var(--accent); font-size:24px;">0</span></p>
-    <button class="big-btn" onclick="location.reload()">重新挑戰</button>
+    <!-- 抽卡測試 -->
+    <div id="passive-panel" class="interactive">
+        <div style="color:var(--accent); font-weight:bold; margin-bottom:5px;">✨ 神秘天賦</div>
+        <div id="passive-list">無</div>
+        <button id="draw-btn" onclick="Game.drawCard()">🎲 隨機抽卡</button>
+    </div>
 </div>
 
 <script>
-/* ==================== 1. 圖片資源 (Data URI) ==================== */
-const SVG_SRC = {
-    cat: `data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='60' r='35' fill='%23ff9acb'/%3E%3Cpath d='M20 35 L30 5 L50 25 Z' fill='%23ff9acb'/%3E%3Cpath d='M80 35 L70 5 L50 25 Z' fill='%23ff9acb'/%3E%3Ccircle cx='35' cy='55' r='5' fill='%23333'/%3E%3Ccircle cx='65' cy='55' r='5' fill='%23333'/%3E%3Cpath d='M45 65 Q50 70 55 65' fill='none' stroke='%23333' stroke-width='2'/%3E%3C/svg%3E`,
-    slime: `data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 20 Q10 20 10 80 Q10 95 50 95 Q90 95 90 80 Q90 20 50 20 Z' fill='%23a3be8c' stroke='%232f3440' stroke-width='2'/%3E%3Ccircle cx='35' cy='50' r='5' fill='%232f3440'/%3E%3Ccircle cx='65' cy='50' r='5' fill='%232f3440'/%3E%3C/svg%3E`,
-    bat: `data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M10 40 Q30 10 50 40 Q70 10 90 40 L50 80 Z' fill='%23b48ead'/%3E%3Ccircle cx='35' cy='50' r='4' fill='white'/%3E%3Ccircle cx='65' cy='50' r='4' fill='white'/%3E%3C/svg%3E`,
-    boss: `data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M30 20 L40 5 L50 20 L60 5 L70 20 Z' fill='%23ebcb8b'/%3E%3Ccircle cx='50' cy='60' r='38' fill='%23bf616a'/%3E%3Cpath d='M30 50 L40 60 L30 70' fill='%232e3440'/%3E%3Cpath d='M70 50 L60 60 L70 70' fill='%232e3440'/%3E%3C/svg%3E`
-};
-
+/* --- 1. 圖片資源 (SVG) --- */
 const IMAGES = {};
-function loadImages() { 
-    for(let k in SVG_SRC){ 
-        let i = new Image(); 
-        i.src = SVG_SRC[k]; 
-        IMAGES[k] = i; 
-    }
+const SVG_SRC = {
+    cat: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZWxsaXBzZSBjeD0iNTAiIGN5PSI2MCIgcng9IjQwIiByeT0iMzUiIGZpbGw9IiNmZmZmZmYiLz48cGF0aCBkPSJNMjAsMzUgTDMwLDUgTDUwLDI1IFoiIGZpbGw9IiNmZmZmZmYiLz48cGF0aCBkPSJNODAsMzUgTDcwLDUgTDUwLDI1IFoiIGZpbGw9IiNmZmZmZmYiLz48Y2lyY2xlIGN4PSIzNSIgY3k9IjU1IiByPSI1IiBmaWxsPSIjMzMzIi8+PGNpcmNsZSBjeD0iNjUiIGN5PSI1NSIgcj0iNSIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==`,
+    slime: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNNTAsMjAgQzIwLDIwIDEwLDYwIDEwLDgwIEMxMCw5MCAzMCw5NSA1MCw5NSBDNzAsOTUgOTAsOTAgOTAsODAgQzkwLDYwIDgwLDIwIDUwLDIwIFoiIGZpbGw9IiNhM2JlOGMiLz48Y2lyY2xlIGN4PSIzNSIgY3k9IjUwIiByPSI1IiBmaWxsPSIjMmUzNDQwIi8+PGNpcmNsZSBjeD0iNjUiIGN5PSI1MCIgcj0iNSIgZmlsbD0iIzJlMzQ0MCIvPjwvc3ZnPg==`,
+    boss: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNMzAsMjAgTDQwLDUgTDUwLDIwIEw2MCw1IEw3MCwyMCBaIiBmaWxsPSIjZWJjYjhiIi8+PHBhdGggZD0iTTUwLDI1IEMxNSwyNSA1LDc1IDUsOTAgQzUsOTggMzAsOTggNTAsOTggQzcwLDk4IDk1LDk4IDk1LDkwIEM5NSw3NSA4NSwyNSA1MCwyNSBaIiBmaWxsPSIjYmY2MTZhIi8+PHBhdGggZD0iTTMwLDUwIEw0MCw2MCBMMzAsNzAiIGZpbGw9IiMyZTM0NDAiLz48cGF0aCBkPSJRNzAsNTAgNjAsNjAgNzAsNzAiIGZpbGw9IiMyZTM0NDAiLz48L3N2Zz4=`
+};
+function loadImages() { for(let k in SVG_SRC){ let i=new Image(); i.src=SVG_SRC[k]; IMAGES[k]=i; } }
+
+/* --- 2. 遊戲引擎 --- */
+let speedMult = 1;
+
+function setSpeed(val, btn) {
+    speedMult = val;
+    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
 }
 
-/* ==================== 2. 技能資料庫 ==================== */
-const SKILL_DB = {
-    'arcane': { name: '奧術飛彈', type: 'active', icon: '🔹', desc: '發射追蹤飛彈', max: 1 },
-    'fireball': { name: '火球術', type: 'active', icon: '🔥', desc: '爆炸火球', max: 1 },
-    'ice': { name: '冰錐術', type: 'active', icon: '❄️', desc: '穿透冰錐', max: 1 },
-    'lightning': { name: '雷擊術', type: 'active', icon: '⚡', desc: '單體雷擊', max: 1 },
-    'log': { name: '滾木', type: 'active', icon: '🪵', desc: '擊退敵人', max: 1 },
-    'tornado': { name: '龍捲風', type: 'active', icon: '🌪️', desc: '持續傷害', max: 1 },
-    'laser': { name: '聚焦激光', type: 'active', icon: '🔦', desc: '持續光束', max: 1 },
-    'meteor': { name: '隕石術', type: 'active', icon: '☄️', desc: '大範圍傷害', max: 1 },
-    'chain_light': { name: '閃電鏈', type: 'active', icon: '🔗', desc: '彈跳閃電', max: 1 },
-    
-    // 進階與合成
-    'arc_dmg': { name: '飛彈增幅', req: 'arcane', desc: '飛彈傷害 +60%' },
-    'arc_count': { name: '飛彈連發', req: 'arcane', desc: '飛彈數量 +1' },
-    'fire_boom': { name: '火球爆燃', req: 'fireball', desc: '爆炸範圍 +80%' },
-    'syn_flame_missile': { name: '🔥 火焰飛彈', type: 'syn', icon: '🟣', req: ['arcane', 'fireball'], desc: '合成：奧術+火球' },
-    'syn_lightning_tornado': { name: '⛈️ 閃電龍捲', type: 'syn', icon: '🟣', req: ['tornado', 'chain_light'], desc: '合成：龍捲+閃電鏈' },
-    'syn_frost_log': { name: '❄️ 冰霜新星', type: 'syn', icon: '🟣', req: ['log', 'ice'], desc: '合成：滾木+冰錐' },
-    'syn_burn_meteor': { name: '🌋 燃燒隕石', type: 'syn', icon: '🟣', req: ['meteor', 'fireball'], desc: '合成：隕石+火球' },
-    'syn_guided_missile': { name: '🚀 制導飛彈', type: 'syn', icon: '🟣', req: ['laser', 'arcane'], desc: '合成：激光+奧術' }
-};
-
-/* ==================== 3. 遊戲引擎 ==================== */
 const Game = {
     canvas: document.getElementById('gameCanvas'),
-    ctx: null, width: 0, height: 0,
-    state: 'MENU', lastTime: 0,
+    ctx: null,
+    width: 0, height: 0,
+    lastTime: 0,
     
-    wave: 1, kills: 0, spawnTimer: 0, exp: 0, level: 1, nextExp: 10,
-    hp: 100, maxHp: 100,
+    // 遊戲狀態
+    wave: 1,
+    spawnTimer: 0,
+    enemies: [],
+    projectiles: [],
+    particles: [],
+    damageTexts: [],
     
-    enemies: [], projectiles: [], texts: [],
-    skills: {}, stats: { atk: 10, cd_mod: 1 },
-    
-    jelly: { x: 0, y: 0 },
+    // 玩家數值
+    player: { x:0, y:0, atk:10, atkSpd:800, atkTimer:0, crit:0.05, multiShot:0 },
+    passives: [],
 
     init() {
         this.ctx = this.canvas.getContext('2d');
         this.resize();
         window.addEventListener('resize', () => this.resize());
-        loadImages(); // 啟動圖片載入
+        loadImages();
         
-        // 立即設定初始座標，不等待圖片
-        this.jelly.x = this.width / 2;
-        this.jelly.y = this.height - 100;
+        this.player.x = this.width / 2;
+        this.player.y = this.height - 100;
 
         requestAnimationFrame(t => this.loop(t));
     },
+
     resize() {
-        this.width = this.canvas.width = window.innerWidth;
-        this.height = this.canvas.height = window.innerHeight;
-        this.jelly.x = this.width / 2;
-        this.jelly.y = this.height - 100;
+        this.width = window.innerWidth;
+        this.height = window.innerHeight;
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+        if(this.player) { this.player.x = this.width/2; this.player.y = this.height-100; }
     },
-    start() {
-        this.state = 'PLAYING';
-        this.reset();
-        document.getElementById('main-menu').classList.add('hidden');
-        document.getElementById('hud').classList.remove('hidden');
-        this.lastTime = performance.now();
-        this.gainSkill(['arcane', 'fireball', 'ice', 'log'][Math.floor(Math.random()*4)]);
-    },
-    reset() {
-        this.wave = 1; this.kills = 0; this.exp = 0; this.level = 1; this.hp = 100;
-        this.enemies = []; this.projectiles = []; this.texts = []; this.skills = {};
-        this.renderSkillBar();
+
+    // 抽卡邏輯
+    drawCard() {
+        const pool = [
+            { t: "🔥 傷害 +5", f: () => this.player.atk += 5 },
+            { t: "⚡ 攻速 +10%", f: () => this.player.atkSpd *= 0.9 },
+            { t: "🎯 暴擊 +5%", f: () => this.player.crit += 0.05 },
+            { t: "🏹 多重射擊", f: () => this.player.multiShot += 1 },
+            { t: "🌊 擊退力 UP", f: () => {} } // 視覺效果
+        ];
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        pick.f();
+        
+        this.passives.push(pick.t);
+        document.getElementById('passive-list').innerHTML = this.passives.join('<br>');
+        
+        // 特效
+        this.spawnText(this.player.x, this.player.y - 50, pick.t, '#ebcb8b', 20);
     },
 
     loop(t) {
-        if(this.state !== 'PLAYING') return requestAnimationFrame(t => this.loop(t));
-        let dt = (t - this.lastTime) / 1000;
+        let dt = t - this.lastTime;
         this.lastTime = t;
-        if (dt > 0.1) dt = 0.1; // 防止切換分頁時時間爆衝
         
-        this.update(dt);
+        // 核心修正：使用 delta time * speedMult 來控制速度，而不是跑很多次迴圈
+        if (dt > 100) dt = 100; // 防止切換視窗時的時間爆衝
+        this.update(dt * speedMult);
         this.draw();
-        requestAnimationFrame(t => this.loop(t));
+        
+        requestAnimationFrame(time => this.loop(time));
     },
 
     update(dt) {
+        // 1. 生成敵人 (依波數邏輯)
         this.spawnTimer += dt;
-        let spawnRate = Math.max(0.5, 2.0 - this.wave * 0.1);
-        if(this.spawnTimer > spawnRate) {
+        let spawnRate = Math.max(200, 1500 - (this.wave * 50));
+        if (this.spawnTimer > spawnRate) {
             this.spawnEnemy();
             this.spawnTimer = 0;
         }
 
-        // 技能冷卻
-        for(let id in this.skills) {
-            let data = SKILL_DB[id];
-            if(data.type === 'active' || data.type === 'syn') {
-                if(!this.skills[id].cooldown) this.skills[id].cooldown = 0;
-                this.skills[id].cooldown -= dt;
-                if(this.skills[id].cooldown <= 0) {
-                    this.castSkill(id);
-                    let baseCd = (id==='laser'?0.5 : (id==='meteor'?4.0 : (id==='log'?3.0 : 1.5)));
-                    this.skills[id].cooldown = baseCd * this.stats.cd_mod; 
-                }
-            }
+        // 2. 玩家攻擊
+        this.player.atkTimer += dt;
+        if (this.player.atkTimer > this.player.atkSpd) {
+            this.shoot();
+            this.player.atkTimer = 0;
         }
 
-        // 敵人
+        // 3. 更新敵人位置
         this.enemies.forEach(e => {
-            let slow = e.slowTimer > 0 ? 0.5 : 1;
-            if(e.slowTimer > 0) e.slowTimer -= dt;
-            if(e.freezeTimer > 0) { e.freezeTimer -= dt; slow = 0; }
-            e.y += e.speed * slow * dt;
-            if(e.y > this.height - 50) { 
-                this.hp -= 10; e.dead = true;
-                this.spawnText(this.width/2, this.height-120, "-10 HP", "red", 30);
-                if(this.hp <= 0) this.gameOver();
-            }
+            e.y += e.speed * (dt / 16);
+            if (e.y > this.height) e.dead = true; // 超出邊界移除
         });
+        this.enemies = this.enemies.filter(e => !e.dead);
 
-        // 投射物
+        // 4. 更新子彈
         this.projectiles.forEach(p => {
-            if(p.target && p.target.dead) p.target = null;
-            if(p.homing && p.target) {
-                let angle = Math.atan2(p.target.y - p.y, p.target.x - p.x);
-                p.vx = Math.cos(angle) * p.speed;
-                p.vy = Math.sin(angle) * p.speed;
-            }
-            p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+            p.x += p.vx * (dt / 16);
+            p.y += p.vy * (dt / 16);
             
-            for(let e of this.enemies) {
-                if(!e.dead && Math.hypot(p.x - e.x, p.y - e.y) < e.r + p.r) {
-                    this.hitEnemy(e, p);
-                    if(!p.pierce) p.dead = true;
+            // 碰撞判定
+            for (let e of this.enemies) {
+                if (Math.hypot(p.x - e.x, p.y - e.y) < e.r + p.r) {
+                    this.dealDamage(e, p.dmg);
+                    p.dead = true;
+                    this.spawnParticle(e.x, e.y, 5, p.color);
                     break;
                 }
             }
+            if (p.x < 0 || p.x > this.width || p.y < 0 || p.y > this.height) p.dead = true;
         });
+        this.projectiles = this.projectiles.filter(p => !p.dead);
 
-        this.enemies = this.enemies.filter(e => !e.dead);
-        this.projectiles = this.projectiles.filter(p => !p.dead && p.life > 0);
-        this.texts = this.texts.filter(t => { t.life -= dt; t.y -= 20*dt; return t.life > 0; });
+        // 5. 更新特效
+        this.particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= dt; });
+        this.particles = this.particles.filter(p => p.life > 0);
         
-        document.getElementById('wave-display').innerText = this.wave;
-        document.getElementById('kill-display').innerText = this.kills;
+        this.damageTexts.forEach(t => { t.y -= 0.5 * (dt/16); t.life -= dt; });
+        this.damageTexts = this.damageTexts.filter(t => t.life > 0);
+
+        // 更新UI
+        document.getElementById('wave-txt').innerText = this.wave;
+        document.getElementById('count-txt').innerText = this.enemies.length;
+        
+        // 簡單的波數推進
+        if(this.enemies.length === 0 && this.spawnTimer === 0) {
+           // 空檔期
+        }
     },
 
     draw() {
-        let ctx = this.ctx;
-        ctx.fillStyle = '#2b303b'; ctx.fillRect(0, 0, this.width, this.height);
+        const ctx = this.ctx;
+        ctx.fillStyle = '#2b303b';
+        ctx.fillRect(0, 0, this.width, this.height);
 
-        // 城牆
-        ctx.fillStyle = '#3b4252'; ctx.fillRect(0, this.height - 50, this.width, 50);
-        ctx.strokeStyle = '#4c566a'; ctx.lineWidth = 2;
-        ctx.beginPath(); for(let i=0; i<this.width; i+=40) { ctx.moveTo(i, this.height-50); ctx.lineTo(i, this.height); } ctx.stroke();
-        // HP Bar
-        ctx.fillStyle = '#a3be8c'; ctx.fillRect(0, this.height - 55, this.width * (this.hp/100), 5);
+        // 畫玩家 (貓咪)
+        if (IMAGES.cat) ctx.drawImage(IMAGES.cat, this.player.x - 30, this.player.y - 30, 60, 60);
 
-        // 畫貓咪 (如果圖片還沒好，畫個粉紅圓)
-        if (IMAGES.cat && IMAGES.cat.complete && IMAGES.cat.naturalWidth !== 0) {
-            let sz = 80;
-            ctx.drawImage(IMAGES.cat, this.jelly.x - sz/2, this.jelly.y - sz/2, sz, sz);
-        } else {
-            ctx.fillStyle = '#ff9acb';
-            ctx.beginPath(); ctx.arc(this.jelly.x, this.jelly.y, 30, 0, Math.PI*2); ctx.fill();
-        }
-
-        // 畫敵人 (如果圖片還沒好，畫綠/紫/紅圓)
+        // 畫敵人
         this.enemies.forEach(e => {
-            let img = IMAGES.slime;
-            let fallbackColor = '#a3be8c';
+            let img = e.boss ? IMAGES.boss : IMAGES.slime;
+            if (img) ctx.drawImage(img, e.x - e.r, e.y - e.r, e.r*2, e.r*2);
             
-            if(e.type === 'bat') { img = IMAGES.bat; fallbackColor = '#b48ead'; }
-            if(e.type === 'boss') { img = IMAGES.boss; fallbackColor = '#bf616a'; }
-
-            if(e.freezeTimer > 0) ctx.globalAlpha = 0.6;
-
-            if(img && img.complete && img.naturalWidth !== 0) {
-                ctx.drawImage(img, e.x - e.r, e.y - e.r, e.r*2, e.r*2);
-            } else {
-                ctx.fillStyle = fallbackColor;
-                ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill();
-            }
-            ctx.globalAlpha = 1.0;
-
             // 血條
-            let hpPct = e.hp/e.maxHp;
             ctx.fillStyle = 'red'; ctx.fillRect(e.x-15, e.y-e.r-8, 30, 4);
-            ctx.fillStyle = '#a3be8c'; ctx.fillRect(e.x-15, e.y-e.r-8, 30*hpPct, 4);
+            ctx.fillStyle = '#a3be8c'; ctx.fillRect(e.x-15, e.y-e.r-8, 30 * (e.hp/e.maxHp), 4);
         });
 
-        // 投射物
+        // 畫子彈
         this.projectiles.forEach(p => {
-            ctx.save(); ctx.translate(p.x, p.y);
-            if(p.emoji) {
-                ctx.font = (p.r*2) + "px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                ctx.fillText(p.emoji, 0, 0);
-            } else {
-                ctx.fillStyle = p.color || '#fff';
-                ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI*2); ctx.fill();
-            }
-            ctx.restore();
+            ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
         });
 
-        // 文字
-        this.texts.forEach(t => {
-            ctx.fillStyle = t.color; ctx.font = "bold "+t.size+"px Fredoka";
-            ctx.textAlign = "center"; ctx.fillText(t.text, t.x, t.y);
+        // 畫粒子
+        this.particles.forEach(p => {
+            ctx.fillStyle = p.color; ctx.globalAlpha = p.life / 300;
+            ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = 1;
+        });
+
+        // 畫文字
+        ctx.font = "bold 16px Fredoka";
+        ctx.textAlign = "center";
+        this.damageTexts.forEach(t => {
+            ctx.fillStyle = t.color; ctx.fillText(t.text, t.x, t.y);
         });
     },
 
     spawnEnemy() {
-        let hp = 10 * Math.pow(1.2, this.wave);
-        let type = 'slime', r = 20, speed = 50 + this.wave * 2;
-        
-        if(this.wave % 5 === 0) { type = 'boss'; hp *= 10; r = 50; speed *= 0.5; }
-        else if(Math.random() > 0.8) { type = 'bat'; hp *= 0.6; speed *= 1.5; }
-
+        let isBoss = (Math.random() < 0.05); // 5% 機率 Boss
+        let hp = isBoss ? 500 + (this.wave * 100) : 30 + (this.wave * 10);
         this.enemies.push({
             x: Math.random() * (this.width - 40) + 20,
-            y: -30, hp: hp, maxHp: hp, speed: speed, r: r,
-            type: type, slowTimer: 0, freezeTimer: 0, dead: false
+            y: -50,
+            hp: hp, maxHp: hp,
+            r: isBoss ? 40 : 20,
+            speed: isBoss ? 0.5 : 1 + (Math.random() * 0.5),
+            boss: isBoss,
+            dead: false
         });
     },
 
-    castSkill(id) {
-        let target = this.enemies[0];
-        if(!target && !['meteor','log','tornado','syn_lightning_tornado'].includes(id)) return;
-        let dmg = this.stats.atk;
+    shoot() {
+        let target = this.enemies[0]; // 簡單瞄準第一個
+        if (!target) return; // 沒敵人不射擊
 
-        switch(id) {
-            case 'arcane': 
-                let c = this.skills['arc_count'] ? 2 : 1;
-                for(let i=0; i<c; i++) setTimeout(() => this.spawnProj(this.jelly.x, this.jelly.y, target, 'missile', dmg, '🔹'), i*100);
-                break;
-            case 'fireball':
-                let fc = this.skills['fire_multi'] ? 2 : 1;
-                for(let i=0; i<fc; i++) setTimeout(() => this.spawnProj(this.jelly.x, this.jelly.y, target, 'fireball', dmg*1.5, '🔥'), i*200);
-                break;
-            case 'ice':
-                this.spawnProj(this.jelly.x, this.jelly.y, target, 'ice', dmg, '❄️', { pierce: true });
-                break;
-            case 'lightning':
-                if(target) { this.spawnText(target.x, target.y-30, "⚡", "#ebcb8b", 40); this.hitEnemy(target, {dmg: dmg*2}); }
-                break;
-            case 'log':
-                this.spawnProj(this.width/2, this.height-100, {x:this.width/2, y:-100}, 'log', dmg, '🪵', {r:30, pierce:true, speed:150});
-                break;
-            case 'tornado':
-                this.spawnProj(Math.random()*this.width, this.height/2, null, 'tornado', dmg*0.5, '🌪️', {r:50, life:3, speed:0, pierce:true});
-                break;
-            case 'meteor':
-                let mx = Math.random()*this.width;
-                this.spawnProj(mx, -50, {x:mx, y:this.height/2}, 'meteor', dmg*3, '☄️', {r:40, speed:200, explode:100});
-                break;
-            case 'syn_flame_missile':
-                this.spawnProj(this.jelly.x, this.jelly.y, target, 'missile', dmg*2, '🟣', {homing:true, explode:60});
-                break;
-            case 'syn_lightning_tornado':
-                this.spawnProj(Math.random()*this.width, this.height/2, null, 'tornado', dmg, '⛈️', {r:60, life:3, speed:0, pierce:true, zap:true});
-                break;
-            case 'syn_frost_log':
-                this.spawnProj(this.width/2, this.height-100, {x:this.width/2, y:-100}, 'log', dmg*1.5, '🧊', {r:35, pierce:true, speed:150, freeze:true});
-                break;
+        let count = 1 + this.player.multiShot;
+        for(let i=0; i<count; i++) {
+            let angle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
+            // 散佈射擊
+            angle += (i - (count-1)/2) * 0.2; 
+            
+            this.projectiles.push({
+                x: this.player.x, y: this.player.y,
+                vx: Math.cos(angle) * 10,
+                vy: Math.sin(angle) * 10,
+                r: 6, color: '#ebcb8b', dmg: this.player.atk, dead: false
+            });
         }
     },
 
-    spawnProj(x, y, target, type, dmg, emoji, opts={}) {
-        let angle = -Math.PI/2;
-        if(target) angle = Math.atan2(target.y - y, target.x - x);
-        this.projectiles.push({
-            x: x, y: y, vx: Math.cos(angle)*(opts.speed||300), vy: Math.sin(angle)*(opts.speed||300),
-            target: target, type: type, dmg: dmg, emoji: emoji,
-            r: opts.r || 10, life: opts.life || 3,
-            homing: opts.homing || (type === 'missile'),
-            pierce: opts.pierce || false,
-            explode: opts.explode || (this.skills['arc_explode'] && type==='missile' ? 30 : 0),
-            freeze: opts.freeze || (this.skills['ice_freeze'] && type==='ice'),
-            zap: opts.zap || false, speed: opts.speed||300
-        });
-    },
-
-    hitEnemy(e, p) {
-        e.hp -= p.dmg;
-        this.spawnText(e.x, e.y-20, Math.floor(p.dmg), "#fff", 20);
-        if(p.freeze) e.freezeTimer = 2.0;
-        if(p.type === 'ice') e.slowTimer = 1.0;
-        if(p.explode) {
-            this.enemies.forEach(sub=>{ if(Math.hypot(sub.x-p.x, sub.y-p.y)<p.explode) sub.hp-=p.dmg*0.5; });
-            this.spawnText(p.x, p.y, "💥", "#f00", 30);
-        }
-        if(e.hp <= 0 && !e.dead) {
-            e.dead = true; this.kills++; this.exp += 2;
-            if(this.exp >= this.nextExp) this.levelUp();
-            if(this.kills % 10 === 0) { this.wave++; this.spawnText(this.width/2, this.height/3, "WAVE UP!", "#ebcb8b", 40); }
-        }
-    },
-
-    spawnText(x, y, text, color, size) { this.texts.push({x, y, text, color, size, life: 1.0}); },
-
-    levelUp() {
-        this.level++; this.exp = 0; this.nextExp = Math.floor(this.nextExp * 1.5);
-        this.state = 'PAUSED';
-        let pool = [];
-        for(let id in SKILL_DB) {
-            let s = SKILL_DB[id];
-            if(s.type === 'syn' && !this.skills[id]) {
-                let meet = true;
-                if(Array.isArray(s.req)) s.req.forEach(r => { if(!this.skills[r]) meet = false; });
-                if(meet) pool.push(id);
+    dealDamage(e, dmg) {
+        let isCrit = Math.random() < this.player.crit;
+        if(isCrit) dmg *= 1.5;
+        e.hp -= dmg;
+        this.spawnText(e.x, e.y-20, Math.floor(dmg), isCrit?'#ebcb8b':'#fff');
+        if(e.hp <= 0) {
+            e.dead = true;
+            this.wave += 0.1; // 殺敵推進波數進度
+            if(Math.floor(this.wave) > Math.floor(this.wave-0.1)) {
+                 this.spawnText(this.width/2, this.height/3, "WAVE UP!", "#88c0d0", 30);
             }
         }
-        for(let id in SKILL_DB) {
-            let s = SKILL_DB[id];
-            if(s.type === 'syn' || (this.skills[id] && s.max && this.skills[id]>=s.max)) continue;
-            if(!s.req) { if(!this.skills[id]) pool.push(id); }
-            else if (typeof s.req === 'string') { if(this.skills[s.req] && !this.skills[id]) pool.push(id); }
-        }
-        let choices = [];
-        for(let i=0; i<3; i++) {
-            if(pool.length === 0) break;
-            let idx = Math.floor(Math.random() * pool.length);
-            choices.push(pool[idx]); pool.splice(idx, 1);
-        }
-        if(choices.length === 0) choices.push('heal');
-        this.renderCards(choices);
-        document.getElementById('level-up').classList.remove('hidden');
     },
 
-    renderCards(ids) {
-        let container = document.getElementById('card-list'); container.innerHTML = '';
-        ids.forEach(id => {
-            if(id === 'heal') {
-                container.innerHTML += `<div class="card" onclick="Game.hp=Math.min(Game.maxHp, Game.hp+30);Game.resume()"><h3>💖 恢復</h3><p>恢復 30% 生命值</p></div>`; return;
-            }
-            let s = SKILL_DB[id];
-            let div = document.createElement('div');
-            div.className = `card ${s.type === 'syn' ? 'synthesis-card' : ''}`;
-            div.innerHTML = `<h3>${s.icon} ${s.name} <span class="tag ${s.type==='syn'?'syn':''}">${s.type==='syn'?'合成':'技能'}</span></h3><p>${s.desc}</p>`;
-            div.onclick = () => this.gainSkill(id);
-            container.appendChild(div);
-        });
-    },
-
-    gainSkill(id) {
-        if(!this.skills[id]) this.skills[id] = 1; else this.skills[id]++;
-        this.renderSkillBar(); this.resume();
-    },
-    resume() { document.getElementById('level-up').classList.add('hidden'); this.state = 'PLAYING'; this.lastTime = performance.now(); },
-    renderSkillBar() {
-        let bar = document.getElementById('active-skills'); bar.innerHTML = '';
-        for(let id in this.skills) {
-            let s = SKILL_DB[id];
-            if(s.type === 'active' || s.type === 'syn') bar.innerHTML += `<div class="skill-icon ${s.type==='syn'?'synthesis':''}">${s.icon}</div>`;
+    spawnParticle(x, y, count, color) {
+        for(let i=0; i<count; i++) {
+            this.particles.push({
+                x:x, y:y,
+                vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5,
+                life: 300, color: color
+            });
         }
     },
-    gameOver() {
-        this.state = 'GAMEOVER';
-        document.getElementById('final-wave').innerText = this.wave;
-        document.getElementById('game-over').classList.remove('hidden');
+
+    spawnText(x, y, text, color, size=16) {
+        this.damageTexts.push({ x:x, y:y, text:text, color:color, life:500, size:size });
     }
 };
 
-// 初始化
 Game.init();
 </script>
 </body>
