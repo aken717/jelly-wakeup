@@ -3,329 +3,494 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>果凍快醒醒 (測試加強版)</title>
+    <title>果凍快醒醒! Jelly Wake Up (修復版)</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #2b303b; --panel: rgba(30,34,40,0.9); --accent: #ebcb8b; --danger: #bf616a;
+            --bg-color: #2b303b;
+            --primary: #88c0d0;
+            --accent: #ebcb8b;
+            --danger: #bf616a;
+            --success: #a3be8c;
+            --panel: rgba(30, 34, 40, 0.95);
+            --glass: rgba(30, 34, 40, 0.8);
         }
-        body { margin: 0; background: #111; font-family: 'Fredoka', sans-serif; overflow: hidden; color: white; }
-        canvas { display: block; width: 100%; height: 100vh; }
 
-        /* UI 區域 */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; background: #111; font-family: 'Fredoka', sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden; color: #eceff4; user-select: none;
+        }
+
+        #game-container {
+            position: relative; width: 100%; max-width: 480px; height: 100%; max-height: 900px;
+            background: var(--bg-color); box-shadow: 0 0 30px rgba(0,0,0,0.5); overflow: hidden;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        /* UI */
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; z-index: 10; }
         .interactive { pointer-events: auto; }
+        .hidden { display: none !important; }
 
-        /* 右上角：倍速控制 */
+        /* HUD */
+        .hud-top { padding: 15px; display: flex; justify-content: space-between; font-size: 18px; text-shadow: 1px 1px 2px #000; }
+        .stat-pill { background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        
+        .bars-area { position: absolute; bottom: 10px; left: 0; width: 100%; padding: 0 20px; display: flex; flex-direction: column; gap: 5px; pointer-events: none; }
+        .bar-wrap { position: relative; height: 18px; background: #2e3440; border-radius: 9px; overflow: hidden; border: 2px solid #4c566a; }
+        .bar-fill { height: 100%; transition: width 0.2s; }
+        .hp-fill { background: linear-gradient(90deg, #bf616a, #d08770); }
+        .exp-fill { background: linear-gradient(90deg, #ebcb8b, #a3be8c); height: 8px; margin-top: 2px;}
+        .bar-text { position: absolute; top: 0; width: 100%; text-align: center; font-size: 11px; line-height: 14px; font-weight: bold; text-shadow: 1px 1px 0 #000; }
+
+        /* 控制面板 */
         #speed-panel {
-            position: absolute; top: 10px; right: 10px;
-            background: var(--panel); padding: 8px; border-radius: 10px;
-            display: flex; gap: 5px; flex-direction: column; align-items: center;
-            backdrop-filter: blur(4px); border: 1px solid #4c566a;
+            position: absolute; top: 60px; right: 10px; width: 40px;
+            display: flex; flex-direction: column; gap: 5px; 
+            pointer-events: auto; z-index: 20;
         }
         .speed-btn {
-            background: #5e81ac; border: none; color: white; padding: 5px 10px;
-            border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 12px; width: 100%;
+            background: var(--glass); border: 1px solid #4c566a; color: #fff;
+            border-radius: 8px; padding: 8px 0; font-size: 12px; cursor: pointer;
+            transition: 0.2s; font-family: inherit;
         }
-        .speed-btn.active { background: #88c0d0; color: #2e3440; font-weight: bold; box-shadow: 0 0 5px #88c0d0; }
+        .speed-btn.active { background: var(--primary); color: #2e3440; font-weight: bold; box-shadow: 0 0 8px var(--primary); border-color: var(--primary); }
 
-        /* 左下角：被動抽卡 */
-        #passive-panel {
-            position: absolute; bottom: 20px; left: 20px;
-            background: var(--panel); padding: 15px; border-radius: 12px;
-            max-width: 200px; border: 1px solid #ebcb8b;
-        }
-        #passive-list {
-            font-size: 12px; color: #d8dee9; margin-bottom: 10px;
-            max-height: 100px; overflow-y: auto; min-height: 20px;
+        #draw-panel {
+            position: absolute; bottom: 80px; left: 10px; z-index: 20; pointer-events: auto;
         }
         #draw-btn {
-            background: var(--accent); color: #2e3440; border: none;
-            width: 100%; padding: 10px; border-radius: 8px;
-            font-weight: bold; cursor: pointer; font-size: 14px;
-            border-bottom: 3px solid #d08770;
+            background: linear-gradient(135deg, #ebcb8b, #d08770);
+            border: none; border-bottom: 4px solid #a67c52;
+            color: #2e3440; font-weight: bold; padding: 10px 15px;
+            border-radius: 12px; cursor: pointer; font-family: inherit;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.1s;
+            display: flex; align-items: center; gap: 5px;
         }
-        #draw-btn:active { transform: translateY(2px); border-bottom: 0; }
+        #draw-btn:active { transform: translateY(2px); border-bottom-width: 2px; }
+        .draw-cost { font-size: 10px; background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
 
-        /* 頂部資訊 */
-        #hud {
-            position: absolute; top: 10px; left: 10px;
-            font-size: 18px; text-shadow: 1px 1px 2px black;
+        /* Screens */
+        .screen { background: var(--panel); pointer-events: auto; padding: 20px; text-align: center; overflow-y: auto; backdrop-filter: blur(5px); }
+        h1 { color: var(--accent); font-size: 32px; margin: 10px 0; text-shadow: 2px 2px 0 #000; }
+        h2 { color: var(--primary); border-bottom: 2px solid #4c566a; padding-bottom: 5px; margin-top: 25px; }
+        .big-btn {
+            background: var(--success); color: #2e3440; border: none; border-bottom: 4px solid #819c6e;
+            padding: 12px 25px; font-size: 18px; font-family: inherit; font-weight: 600;
+            border-radius: 12px; cursor: pointer; margin: 10px; width: 80%; max-width: 300px;
         }
+        .big-btn:active { transform: translateY(2px); border-bottom-width: 2px; }
+        .sec-btn { background: #5e81ac; border-bottom-color: #436180; color: white; font-size: 14px; padding: 8px 16px; width: auto; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 400px; margin: 0 auto; }
+        .card { background: #434c5e; padding: 10px; border-radius: 8px; font-size: 13px; cursor: pointer; border: 1px solid #4c566a; display: flex; flex-direction: column; align-items: center; }
+        .skill-modal { display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); z-index: 50; pointer-events: auto; }
+        .skill-card { background: linear-gradient(135deg, #434c5e, #2e3440); border: 2px solid #81a1c1; width: 90%; max-width: 320px; padding: 15px; margin: 8px 0; border-radius: 12px; cursor: pointer; text-align: left; position: relative; }
+        .float-text { position: absolute; pointer-events: none; font-weight: bold; text-shadow: 2px 2px 0 #000; animation: floatUp 0.8s ease-out forwards; }
+        @keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-40px) scale(1.2); opacity: 0; } }
+        .equip-slot { background: #2e3440; border: 2px solid #4c566a; border-radius: 8px; padding: 8px; text-align: left; font-size: 12px; }
     </style>
 </head>
 <body>
 
-<canvas id="gameCanvas"></canvas>
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
 
-<div id="ui-layer">
-    <div id="hud">
-        <div>Wave: <span id="wave-txt">1</span></div>
-        <div style="font-size:14px; color:#aaa">Enemies: <span id="count-txt">0</span></div>
+    <div id="hud" class="overlay hidden">
+        <div class="hud-top">
+            <div class="stat-pill">🌊 Wave <span id="wave-display">1</span></div>
+            <div class="stat-pill">💰 <span id="gold-display-game">0</span></div>
+        </div>
+        <div id="speed-panel">
+            <button class="speed-btn active" onclick="Game.setSpeed(1, this)">x1</button>
+            <button class="speed-btn" onclick="Game.setSpeed(2, this)">x2</button>
+            <button class="speed-btn" onclick="Game.setSpeed(5, this)">x5</button>
+        </div>
+        <div id="draw-panel">
+            <button id="draw-btn" onclick="Game.drawBonus()">
+                🎲 幸運強化 <span class="draw-cost" id="draw-cost-display">Free</span>
+            </button>
+        </div>
+        <div class="bars-area">
+            <div style="display: flex; justify-content: space-between; color: white; font-size: 12px; margin-bottom: 2px;">
+                <span>城牆 HP</span><span>Lv.<span id="level-display">1</span></span>
+            </div>
+            <div class="bar-wrap">
+                <div class="bar-fill hp-fill" id="wall-hp-bar" style="width: 100%"></div>
+                <div class="bar-text" id="wall-hp-text">200/200</div>
+            </div>
+            <div class="bar-wrap" style="height: 8px; border:none; background: #333;">
+                <div class="bar-fill exp-fill" id="exp-bar" style="width: 0%"></div>
+            </div>
+        </div>
     </div>
 
-    <!-- 倍速控制 -->
-    <div id="speed-panel" class="interactive">
-        <div style="font-size:10px; color:#aaa; margin-bottom:2px;">GAME SPEED</div>
-        <button class="speed-btn active" onclick="setSpeed(1, this)">x1</button>
-        <button class="speed-btn" onclick="setSpeed(2, this)">x2</button>
-        <button class="speed-btn" onclick="setSpeed(5, this)">x5</button>
-        <button class="speed-btn" onclick="setSpeed(10, this)">x10</button>
+    <div id="main-menu" class="overlay screen">
+        <h1>🐱 果凍快醒醒!</h1>
+        <p style="color: #d8dee9; font-size: 14px;">保護城牆，撐過 20 波攻勢！</p>
+        <div style="margin: 15px 0; font-size: 18px;">
+            💰 <span id="menu-gold">0</span> &nbsp;|&nbsp; ✨ <span id="menu-sp">0</span>
+        </div>
+        <button class="big-btn" onclick="Game.startRun()">⚔️ 開始戰鬥</button>
+        <h2>🧠 貓咪天賦</h2>
+        <div class="grid" id="talent-grid"></div>
+        <h2>🛡️ 裝備箱 (200 G)</h2>
+        <button class="big-btn sec-btn" onclick="Meta.buyEquipment()">📦 購買裝備</button>
+        <h2 style="margin-top: 20px;">🎒 目前裝備</h2>
+        <div class="grid" id="equip-grid" style="margin-bottom: 50px;"></div>
     </div>
 
-    <!-- 抽卡測試 -->
-    <div id="passive-panel" class="interactive">
-        <div style="color:var(--accent); font-weight:bold; margin-bottom:5px;">✨ 神秘天賦</div>
-        <div id="passive-list">無</div>
-        <button id="draw-btn" onclick="Game.drawCard()">🎲 隨機抽卡</button>
+    <div id="skill-screen" class="overlay skill-modal hidden">
+        <h2 style="color:white;">✨ 升級啦!</h2>
+        <div id="skill-options" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
+    </div>
+
+    <div id="game-over-screen" class="overlay screen hidden" style="justify-content: center;">
+        <h1 id="go-title">GAME OVER</h1>
+        <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 10px; width: 80%; margin: 0 auto;">
+            <p>抵達波數: <span id="go-wave" style="color:var(--primary); font-weight:bold;">0</span></p>
+            <p>獲得金幣: <span id="go-gold" style="color:var(--accent); font-weight:bold;">0</span></p>
+            <p>獲得 SP: <span id="go-sp" style="color:var(--success); font-weight:bold;">0</span></p>
+        </div>
+        <button class="big-btn" onclick="Game.returnToMenu()">🏠 回主選單</button>
     </div>
 </div>
 
 <script>
-/* --- 1. 圖片資源 (SVG) --- */
-const IMAGES = {};
-const SVG_SRC = {
-    cat: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZWxsaXBzZSBjeD0iNTAiIGN5PSI2MCIgcng9IjQwIiByeT0iMzUiIGZpbGw9IiNmZmZmZmYiLz48cGF0aCBkPSJNMjAsMzUgTDMwLDUgTDUwLDI1IFoiIGZpbGw9IiNmZmZmZmYiLz48cGF0aCBkPSJNODAsMzUgTDcwLDUgTDUwLDI1IFoiIGZpbGw9IiNmZmZmZmYiLz48Y2lyY2xlIGN4PSIzNSIgY3k9IjU1IiByPSI1IiBmaWxsPSIjMzMzIi8+PGNpcmNsZSBjeD0iNjUiIGN5PSI1NSIgcj0iNSIgZmlsbD0iIzMzMyIvPjwvc3ZnPg==`,
-    slime: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNNTAsMjAgQzIwLDIwIDEwLDYwIDEwLDgwIEMxMCw5MCAzMCw5NSA1MCw5NSBDNzAsOTUgOTAsOTAgOTAsODAgQzkwLDYwIDgwLDIwIDUwLDIwIFoiIGZpbGw9IiNhM2JlOGMiLz48Y2lyY2xlIGN4PSIzNSIgY3k9IjUwIiByPSI1IiBmaWxsPSIjMmUzNDQwIi8+PGNpcmNsZSBjeD0iNjUiIGN5PSI1MCIgcj0iNSIgZmlsbD0iIzJlMzQ0MCIvPjwvc3ZnPg==`,
-    boss: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNMzAsMjAgTDQwLDUgTDUwLDIwIEw2MCw1IEw3MCwyMCBaIiBmaWxsPSIjZWJjYjhiIi8+PHBhdGggZD0iTTUwLDI1IEMxNSwyNSA1LDc1IDUsOTAgQzUsOTggMzAsOTggNTAsOTggQzcwLDk4IDk1LDk4IDk1LDkwIEM5NSw3NSA4NSwyNSA1MCwyNSBaIiBmaWxsPSIjYmY2MTZhIi8+PHBhdGggZD0iTTMwLDUwIEw0MCw2MCBMMzAsNzAiIGZpbGw9IiMyZTM0NDAiLz48cGF0aCBkPSJRNzAsNTAgNjAsNjAgNzAsNzAiIGZpbGw9IiMyZTM0NDAiLz48L3N2Zz4=`
+/* ==================== 1. 修復後的圖片資產 (SVG Base64) ==================== */
+const SVG_ASSETS = {
+    // 修正過的粉紅貓咪 (移除可能造成錯誤的 Smart Quotes)
+    cat: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48cmFkaWFsR3JhZGllbnQgaWQ9ImciIGN4PSI1MCUiIGN5PSI0MCUiIHI9IjUwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmZTRmMCIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2ZmOWFjYiIvPjwvcmFkaWFsR3JhZGllbnQ+PC9kZWZzPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTUiIHI9IjQwIiBmaWxsPSJ1cmwoI2cpIi8+PHBhdGggZD0iTTIwIDMwIEwxMCA1IEwzNSAxNSBaIiBmaWxsPSIjZmY5YWNiIi8+PHBhdGggZD0iTTgwIDMwIEw5MCA1IEw2NSAxNSBaIiBmaWxsPSIjZmY5YWNiIi8+PGVsbGlwc2UgY3g9IjM1IiBjeT0iNTUiIHJ4PSI1IiByeT0iOCIgZmlsbD0iIzMzMyIvPjxlbGxpcHNlIGN4PSI2NSIgY3k9IjU1IiByeD0iNSIgcnk9IjgiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSIzMyIgY3k9IjUyIiByPSIyIiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iNjMiIGN5PSI1MiIgcj0iMiIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik00NSA3MCBRNTAgNzUgNTUgNzAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48ZWxsaXBzZSBjeD0iMjUiIGN5PSI2NSIgcng9IjUiIHJ5PSIzIiBmaWxsPSIjZmY3YmE5IiBvcGFjaXR5PSIwLjYiLz48ZWxsaXBzZSBjeD0iNzUiIGN5PSI2NSIgcng9IjUiIHJ5PSIzIiBmaWxsPSIjZmY3YmE5IiBvcGFjaXR5PSIwLjYiLz48L3N2Zz4=`,
+    
+    // 綠色史萊姆
+    slime: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNNTAsMjAgQzIwLDIwIDEwLDYwIDEwLDgwIEMxMCw5MCAzMCw5NSA1MCw5NSBDNzAsOTUgOTAsOTAgOTAsODAgQzkwLDYwIDgwLDIwIDUwLDIwIFoiIGZpbGw9IiNhM2JlOGMiIHN0cm9rZT0iIzJmMzQ0MCIgc3Ryb2tlLXdpZHRoPSIyIi8+PGNpcmNsZSBjeD0iMzUiIGN5PSI1MCIgcj0iNSIgZmlsbD0iIzJmMzQ0MCIvPjxjaXJjbGUgY3g9IjY1IiBjeT0iNTAiIHI9IjUiIGZpbGw9IiMyZjM0NDAiLz48L3N2Zz4=`,
+    
+    // 蝙蝠
+    bat: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNMTAsNDAgUTMwLDEwIDUwLDQwIFE3MCwxMCA5MCw0MCBMODAsODAgTDIwLDgwIFoiIGZpbGw9IiNiNDhlYWQiIHN0cm9rZT0iIzJmMzQ0MCIgc3Ryb2tlLXdpZHRoPSIyIi8+PGNpcmNsZSBjeD0iMzUiIGN5PSI1NSIgcj0iNCIgZmlsbD0iI2ViY2I4YiIvPjxjaXJjbGUgY3g9IjY1IiBjeT0iNTUiIHI9IjQiIGZpbGw9IiNlYmNiOGIiLz48L3N2Zz4=`,
+    
+    // Boss
+    boss: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNMzAsMjAgTDQwLDUgTDUwLDIwIEw2MCw1IEw3MCwyMCBaIiBmaWxsPSIjZWJjYjhiIiBzdHJva2U9IiMyZjM0NDAiIHN0cm9rZS13aWR0aD0iMiIvPjxwYXRoIGQ9Ik01MCwyNSBDMTUsMjUgNSw3NSA1LDkwIEM1LDk4IDMwLDk4IDUwLDk4IEM3MCw5OCA5NSw5OCA5NSw5MCBDOTUsNzUgODUsMjUgNTAsMjUgWiIgZmlsbD0iI2JmNjE2YSIgc3Ryb2tlPSIjYTM0ZTU0IiBzdHJva2Utd2lkdGg9IjMiLz48cGF0aCBkPSJNMzAsNTAgTDQwLDYwIEwzMCw3MCIgZmlsbD0iIzJlMzQ0MCIvPjxwYXRoIGQ9Ik03MCw1MCBMNjAsNjAgTDcwLDcwIiBmaWxsPSIjMmUzNDQwIi8+PC9zdmc+`,
+    
+    // 特效
+    fireball: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MCA1MCI+PHBhdGggZD0iTTI1LDUgQzEwLDI1IDUsMzAgNSw0MCBDNSw1MiA0NSw1MiA0NSw0MCBDNDUsMzAgNDAsMjUgMjUsNSBaIiBmaWxsPSIjZDA4NzcwIiBzdHJva2U9IiNmMzkzMzAiIHN0cm9rZS13aWR0aD0iMiIvPjwvc3ZnPg==`,
+    ice: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MCA1MCI+PHBhdGggZD0iTTI1LDUgTDI1LDQ1IE01LDI1IEw0NSwyNSBNMTAsMTAgTDQwLDQwIE00MCwxMCBMMTAsNDAiIHN0cm9rZT0iIzg4YzBkMCIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=`,
+    lightning: `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MCA1MCI+PHBhdGggZD0iTTI1LDUgTDEwLDI1IEwyNSwyNSBMMjAsNDUgTDM1LDI1IEwyMCwyNSBaIiBmaWxsPSIjZWJjYjhiIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIvPjwvc3ZnPg==`
 };
-function loadImages() { for(let k in SVG_SRC){ let i=new Image(); i.src=SVG_SRC[k]; IMAGES[k]=i; } }
 
-/* --- 2. 遊戲引擎 --- */
-let speedMult = 1;
-
-function setSpeed(val, btn) {
-    speedMult = val;
-    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+const IMAGES = {};
+function loadImages() {
+    for(let k in SVG_ASSETS){
+        let i = new Image();
+        i.src = SVG_ASSETS[k];
+        IMAGES[k] = i;
+    }
 }
 
+/* ==================== 2. 存檔與數值 (Meta) ==================== */
+const CONFIG = { width: 480, height: 800, baseWallHP: 200 };
+const RARITY = { 0: {n:'普通',c:'#d8dee9',m:1}, 1: {n:'稀有',c:'#88c0d0',m:1.5}, 2: {n:'史詩',c:'#b48ead',m:2.2}, 3: {n:'傳說',c:'#ebcb8b',m:3.5} };
+const SaveData = { gold: 0, sp: 0, talents: { atk:0, atkSpd:0, wallHp:0, goldGain:0 }, equipment: {} };
+
+const Meta = {
+    load() {
+        const d = localStorage.getItem('jelly_fix_v3');
+        if(d) Object.assign(SaveData, JSON.parse(d));
+        this.updateUI();
+    },
+    save() { localStorage.setItem('jelly_fix_v3', JSON.stringify(SaveData)); this.updateUI(); },
+    updateUI() {
+        document.getElementById('menu-gold').innerText = SaveData.gold;
+        document.getElementById('menu-sp').innerText = SaveData.sp;
+        this.renderTalents(); this.renderEquip();
+    },
+    getStats() {
+        return {
+            atkMult: 1 + SaveData.talents.atk*0.1,
+            hpMult: 1 + SaveData.talents.wallHp*0.1,
+            goldMult: 1 + SaveData.talents.goldGain*0.1,
+            cdMult: Math.max(0.4, 1 - SaveData.talents.atkSpd*0.05)
+        };
+    },
+    upgrade(id) {
+        const cost = id==='goldGain' ? 2+SaveData.talents[id]*2 : 1+SaveData.talents[id];
+        if(SaveData.sp >= cost){ SaveData.sp-=cost; SaveData.talents[id]++; this.save(); }
+    },
+    renderTalents() {
+        const g = document.getElementById('talent-grid'); g.innerHTML = '';
+        [{id:'atk',n:'貓貓拳'},{id:'atkSpd',n:'貓爪速'},{id:'wallHp',n:'加固城牆'},{id:'goldGain',n:'招財貓'}].forEach(t=>{
+            const l = SaveData.talents[t.id], c = t.id==='goldGain'?2+l*2:1+l;
+            g.innerHTML += `<div class="card" onclick="Meta.upgrade('${t.id}')"><b>${t.n} (Lv.${l})</b><div class="cost">${c} SP</div></div>`;
+        });
+    },
+    buyEquipment() {
+        if(SaveData.gold < 200) return alert('金幣不足!');
+        SaveData.gold -= 200;
+        const slots=['weapon','necklace','ring','armor','charm'];
+        const slot=slots[Math.floor(Math.random()*slots.length)];
+        let r=Math.random()>0.95?3:Math.random()>0.8?2:Math.random()>0.5?1:0;
+        const base={weapon:{atk:5},necklace:{crit:2},ring:{critDmg:10},armor:{hp:50},charm:{cd:2}};
+        const stats={}; for(let k in base[slot]) stats[k]=Math.floor(base[slot][k]*RARITY[r].m*(1+Math.random()));
+        
+        const cur=SaveData.equipment[slot];
+        if(!cur || r>cur.rarity || (r==cur.rarity && Math.random()>0.5)){
+            SaveData.equipment[slot] = {rarity:r, stats:stats}; alert(`裝備了 [${RARITY[r].n}] ${slot}!`);
+        } else alert(`獲得 [${RARITY[r].n}] ${slot} 但舊的比較好。`);
+        this.save();
+    },
+    renderEquip(){
+        const g=document.getElementById('equip-grid'); g.innerHTML='';
+        ['weapon','necklace','ring','armor','charm'].forEach(k=>{
+            const it=SaveData.equipment[k];
+            g.innerHTML+=`<div class="equip-slot" style="border-color:${it?RARITY[it.rarity].c:'#4c566a'}"><b>${k.toUpperCase()}</b><br>${it?RARITY[it.rarity].n:'無'}</div>`;
+        });
+    },
+    getEquipStats(){
+        let t={atk:0,hp:0,crit:0,critDmg:0,cd:0};
+        for(let k in SaveData.equipment) if(SaveData.equipment[k]) for(let s in SaveData.equipment[k].stats) t[s]+=SaveData.equipment[k].stats[s];
+        return t;
+    }
+};
+
+/* ==================== 3. 遊戲引擎 (Core) ==================== */
 const Game = {
-    canvas: document.getElementById('gameCanvas'),
-    ctx: null,
-    width: 0, height: 0,
-    lastTime: 0,
-    
-    // 遊戲狀態
-    wave: 1,
-    spawnTimer: 0,
-    enemies: [],
-    projectiles: [],
-    particles: [],
-    damageTexts: [],
-    
-    // 玩家數值
-    player: { x:0, y:0, atk:10, atkSpd:800, atkTimer:0, crit:0.05, multiShot:0 },
-    passives: [],
+    canvas: null, ctx: null, state: 'MENU', lastTime: 0, speedMult: 1, run: {},
 
     init() {
+        this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.resize();
-        window.addEventListener('resize', () => this.resize());
+        window.addEventListener('resize', ()=>this.resize());
+        Meta.load();
         loadImages();
-        
-        this.player.x = this.width / 2;
-        this.player.y = this.height - 100;
-
         requestAnimationFrame(t => this.loop(t));
     },
-
     resize() {
-        this.width = window.innerWidth;
-        this.height = window.innerHeight;
-        this.canvas.width = this.width;
-        this.canvas.height = this.height;
-        if(this.player) { this.player.x = this.width/2; this.player.y = this.height-100; }
+        const c = document.getElementById('game-container');
+        this.canvas.width = c.clientWidth; this.canvas.height = c.clientHeight;
+    },
+    setSpeed(val, btn) {
+        this.speedMult = val;
+        document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
     },
 
-    // 抽卡邏輯
-    drawCard() {
+    startRun() {
+        const e = Meta.getEquipStats(), t = Meta.getStats();
+        this.run = {
+            wave: 1, spawnTimer: 0, enemiesKilled: 0, targetKills: 10, gold: 0,
+            enemies: [], projectiles: [], particles: [], texts: [],
+            level: 1, exp: 0, nextExp: 15,
+            skills: { fireball:1, ice:0, lightning:0, wind:0 },
+            jelly: {
+                x: this.canvas.width/2, y: this.canvas.height-110,
+                atk: (10+e.atk)*t.atkMult, 
+                atkSpd: 1000*t.cdMult*(1-e.cd/100), 
+                atkTimer: 0,
+                crit: 0.05+e.crit/100, 
+                critDmg: 1.5+e.critDmg/100,
+                multiShot: 0
+            },
+            wall: { maxHp:(CONFIG.baseWallHP+e.hp)*t.hpMult, hp:(CONFIG.baseWallHP+e.hp)*t.hpMult, y:this.canvas.height-70 }
+        };
+        
+        document.getElementById('main-menu').classList.add('hidden');
+        document.getElementById('game-over-screen').classList.add('hidden');
+        document.getElementById('hud').classList.remove('hidden');
+        this.state = 'PLAYING'; this.lastTime = performance.now();
+        this.speedMult = 1; 
+        this.updateHUD();
+    },
+
+    drawBonus() {
         const pool = [
-            { t: "🔥 傷害 +5", f: () => this.player.atk += 5 },
-            { t: "⚡ 攻速 +10%", f: () => this.player.atkSpd *= 0.9 },
-            { t: "🎯 暴擊 +5%", f: () => this.player.crit += 0.05 },
-            { t: "🏹 多重射擊", f: () => this.player.multiShot += 1 },
-            { t: "🌊 擊退力 UP", f: () => {} } // 視覺效果
+            {t:"🔥 攻擊 +5", f:()=>this.run.jelly.atk+=5},
+            {t:"⚡ 攻速 +10%", f:()=>this.run.jelly.atkSpd*=0.9},
+            {t:"🏹 多重射擊", f:()=>this.run.jelly.multiShot++},
+            {t:"💖 城牆修復", f:()=>this.run.wall.hp=Math.min(this.run.wall.maxHp, this.run.wall.hp+50)},
+            {t:"💰 意外之財", f:()=>this.run.gold+=50}
         ];
-        const pick = pool[Math.floor(Math.random() * pool.length)];
+        const pick = pool[Math.floor(Math.random()*pool.length)];
         pick.f();
-        
-        this.passives.push(pick.t);
-        document.getElementById('passive-list').innerHTML = this.passives.join('<br>');
-        
-        // 特效
-        this.spawnText(this.player.x, this.player.y - 50, pick.t, '#ebcb8b', 20);
+        this.floatText(pick.t, this.run.jelly.x, this.run.jelly.y-60, '#ebcb8b', 24);
+        this.updateHUD();
     },
 
     loop(t) {
-        let dt = t - this.lastTime;
-        this.lastTime = t;
+        let dt = t - this.lastTime; this.lastTime = t;
+        if (dt > 100) dt = 100; 
         
-        // 核心修正：使用 delta time * speedMult 來控制速度，而不是跑很多次迴圈
-        if (dt > 100) dt = 100; // 防止切換視窗時的時間爆衝
-        this.update(dt * speedMult);
-        this.draw();
-        
+        if (this.state === 'PLAYING') { 
+            this.update(dt * this.speedMult); 
+            this.draw(); 
+        }
+        else if (this.state === 'GAMEOVER' || this.state === 'PAUSED') this.draw();
         requestAnimationFrame(time => this.loop(time));
     },
 
     update(dt) {
-        // 1. 生成敵人 (依波數邏輯)
-        this.spawnTimer += dt;
-        let spawnRate = Math.max(200, 1500 - (this.wave * 50));
-        if (this.spawnTimer > spawnRate) {
-            this.spawnEnemy();
-            this.spawnTimer = 0;
+        const r = this.run;
+        r.spawnTimer += dt;
+        let rate = r.wave<=3 ? 1500 : Math.max(400, 1000-(r.wave-4)*50);
+        if (r.enemiesKilled < r.targetKills) {
+            if (r.spawnTimer > rate) { this.spawnEnemy(); r.spawnTimer = 0; }
+        } else if (r.enemies.length === 0) {
+            r.wave++; r.enemiesKilled = 0; r.targetKills += 5; r.spawnTimer = -2000;
+            this.floatText(`🌊 Wave ${r.wave}`, this.canvas.width/2, this.canvas.height/3, '#88c0d0', 30);
         }
 
-        // 2. 玩家攻擊
-        this.player.atkTimer += dt;
-        if (this.player.atkTimer > this.player.atkSpd) {
-            this.shoot();
-            this.player.atkTimer = 0;
-        }
+        r.jelly.atkTimer += dt;
+        if (r.jelly.atkTimer > r.jelly.atkSpd) { this.fire(); r.jelly.atkTimer = 0; }
 
-        // 3. 更新敵人位置
-        this.enemies.forEach(e => {
-            e.y += e.speed * (dt / 16);
-            if (e.y > this.height) e.dead = true; // 超出邊界移除
+        r.enemies.forEach(e => {
+            let slow = r.skills.ice>0 ? 0.6 : 1;
+            e.y += e.spd * slow * (dt/1000);
+            if (e.y+e.r >= r.wall.y) {
+                e.y = r.wall.y - e.r; e.atkT += dt;
+                if (e.atkT > 1000) {
+                    r.wall.hp -= e.atk; e.atkT = 0;
+                    this.part(e.x, e.y+e.r, 3, '#bf616a');
+                    if (r.wall.hp <= 0) this.gameOver();
+                }
+            }
         });
-        this.enemies = this.enemies.filter(e => !e.dead);
 
-        // 4. 更新子彈
-        this.projectiles.forEach(p => {
-            p.x += p.vx * (dt / 16);
-            p.y += p.vy * (dt / 16);
-            
-            // 碰撞判定
-            for (let e of this.enemies) {
-                if (Math.hypot(p.x - e.x, p.y - e.y) < e.r + p.r) {
-                    this.dealDamage(e, p.dmg);
-                    p.dead = true;
-                    this.spawnParticle(e.x, e.y, 5, p.color);
+        for (let i = r.projectiles.length-1; i>=0; i--) {
+            let p = r.projectiles[i];
+            if(p.target && !p.target.dead) {
+                let a = Math.atan2(p.target.y-p.y, p.target.x-p.x);
+                p.vx = Math.cos(a)*p.spd; p.vy = Math.sin(a)*p.spd;
+            }
+            p.x += p.vx*(dt/16); p.y += p.vy*(dt/16);
+            let hit = false;
+            for(let e of r.enemies) {
+                if(Math.hypot(p.x-e.x, p.y-e.y) < p.r+e.r) {
+                    this.dmg(e, p.dmg, p.crit); hit=true;
+                    if(p.type==='fireball' && r.skills.fireball>1) this.explode(e.x, e.y, 60, p.dmg*0.5);
                     break;
                 }
             }
-            if (p.x < 0 || p.x > this.width || p.y < 0 || p.y > this.height) p.dead = true;
-        });
-        this.projectiles = this.projectiles.filter(p => !p.dead);
-
-        // 5. 更新特效
-        this.particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= dt; });
-        this.particles = this.particles.filter(p => p.life > 0);
-        
-        this.damageTexts.forEach(t => { t.y -= 0.5 * (dt/16); t.life -= dt; });
-        this.damageTexts = this.damageTexts.filter(t => t.life > 0);
-
-        // 更新UI
-        document.getElementById('wave-txt').innerText = this.wave;
-        document.getElementById('count-txt').innerText = this.enemies.length;
-        
-        // 簡單的波數推進
-        if(this.enemies.length === 0 && this.spawnTimer === 0) {
-           // 空檔期
+            if(hit || p.y<-50 || p.x<-50 || p.x>this.canvas.width+50) r.projectiles.splice(i,1);
         }
+
+        r.particles = r.particles.filter(p=>{ p.x+=p.vx; p.y+=p.vy; p.life-=dt; return p.life>0; });
+        r.texts = r.texts.filter(t=>{ t.y-=0.5*(dt/16); t.life-=dt; return t.life>0; });
+        this.updateHUD();
     },
 
     draw() {
-        const ctx = this.ctx;
-        ctx.fillStyle = '#2b303b';
-        ctx.fillRect(0, 0, this.width, this.height);
+        const ctx = this.ctx; const r = this.run;
+        ctx.fillStyle = '#2b303b'; ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        ctx.fillStyle = '#3b4252'; ctx.fillRect(0, r.wall.y, this.canvas.width, 100);
+        
+        // 繪製貓咪 (安全檢查: 確保圖片載入完成才畫，不然畫圓形替代)
+        if(IMAGES.cat && IMAGES.cat.complete && IMAGES.cat.naturalWidth > 0) {
+            const sz = 80; 
+            ctx.drawImage(IMAGES.cat, r.jelly.x-sz/2, r.jelly.y-sz/2, sz, sz);
+        } else {
+            // 萬一圖片掛掉的備案
+            ctx.fillStyle = '#ff9acb'; ctx.beginPath(); ctx.arc(r.jelly.x, r.jelly.y, 30, 0, Math.PI*2); ctx.fill();
+        }
 
-        // 畫玩家 (貓咪)
-        if (IMAGES.cat) ctx.drawImage(IMAGES.cat, this.player.x - 30, this.player.y - 30, 60, 60);
+        if(r.skills.ice>0) { ctx.fillStyle='rgba(136,192,208,0.1)'; ctx.beginPath(); ctx.arc(r.jelly.x, r.jelly.y-150, 200, 0, Math.PI*2); ctx.fill(); }
 
-        // 畫敵人
-        this.enemies.forEach(e => {
-            let img = e.boss ? IMAGES.boss : IMAGES.slime;
-            if (img) ctx.drawImage(img, e.x - e.r, e.y - e.r, e.r*2, e.r*2);
+        r.enemies.forEach(e => {
+            let img = IMAGES.slime;
+            if(e.type==='fast') img=IMAGES.bat;
+            if(e.type==='boss') img=IMAGES.boss;
             
-            // 血條
-            ctx.fillStyle = 'red'; ctx.fillRect(e.x-15, e.y-e.r-8, 30, 4);
-            ctx.fillStyle = '#a3be8c'; ctx.fillRect(e.x-15, e.y-e.r-8, 30 * (e.hp/e.maxHp), 4);
+            if(img && img.complete) ctx.drawImage(img, e.x-e.r, e.y-e.r, e.r*2, e.r*2);
+            else { ctx.fillStyle=e.type==='boss'?'purple':'green'; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill(); }
+            
+            const pct = e.hp/e.maxHp;
+            ctx.fillStyle='#2e3440'; ctx.fillRect(e.x-12, e.y-e.r-8, 24, 4);
+            ctx.fillStyle='#a3be8c'; ctx.fillRect(e.x-12, e.y-e.r-8, 24*pct, 4);
         });
 
-        // 畫子彈
-        this.projectiles.forEach(p => {
-            ctx.fillStyle = p.color;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+        r.projectiles.forEach(p => {
+            let img = IMAGES.fireball;
+            if(p.type==='lightning') img=IMAGES.lightning;
+            if(p.type==='ice') img=IMAGES.ice;
+            
+            ctx.save(); ctx.translate(p.x, p.y);
+            if(p.type==='fireball') ctx.rotate(Math.atan2(p.vy, p.vx)+Math.PI/2);
+            if(img && img.complete) ctx.drawImage(img, -p.r*2, -p.r*2, p.r*4, p.r*4);
+            else { ctx.fillStyle='orange'; ctx.beginPath(); ctx.arc(0,0, p.r, 0, Math.PI*2); ctx.fill(); }
+            ctx.restore();
         });
 
-        // 畫粒子
-        this.particles.forEach(p => {
-            ctx.fillStyle = p.color; ctx.globalAlpha = p.life / 300;
-            ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
-            ctx.globalAlpha = 1;
-        });
-
-        // 畫文字
-        ctx.font = "bold 16px Fredoka";
-        ctx.textAlign = "center";
-        this.damageTexts.forEach(t => {
-            ctx.fillStyle = t.color; ctx.fillText(t.text, t.x, t.y);
-        });
+        r.particles.forEach(p=>{ ctx.fillStyle=p.c; ctx.globalAlpha=p.life/300; ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha=1; });
+        ctx.textAlign="center";
+        r.texts.forEach(t=>{ ctx.fillStyle=t.c; ctx.font=`bold ${t.s}px Fredoka`; ctx.fillText(t.t, t.x, t.y); });
     },
 
     spawnEnemy() {
-        let isBoss = (Math.random() < 0.05); // 5% 機率 Boss
-        let hp = isBoss ? 500 + (this.wave * 100) : 30 + (this.wave * 10);
-        this.enemies.push({
-            x: Math.random() * (this.width - 40) + 20,
-            y: -50,
-            hp: hp, maxHp: hp,
-            r: isBoss ? 40 : 20,
-            speed: isBoss ? 0.5 : 1 + (Math.random() * 0.5),
-            boss: isBoss,
-            dead: false
+        const r = this.run;
+        let hp, spd, atk, type='normal', size=20;
+        if(r.wave<5) { hp=15+r.wave*5; spd=25+r.wave*2; atk=5+r.wave; }
+        else { hp=40*Math.pow(1.1, r.wave-5); spd=40+r.wave*2; atk=10+r.wave*2; }
+        
+        if(r.wave%10===0) { type='boss'; hp*=10; spd*=0.5; size=60; }
+        else if(Math.random()>0.8) { type='fast'; hp*=0.6; spd*=1.5; size=15; }
+
+        r.enemies.push({x:Math.random()*(this.canvas.width-40)+20, y:-50, hp:hp, maxHp:hp, atk:atk, spd:spd, r:size, type:type, atkT:0, dead:false});
+    },
+
+    fire() {
+        const t = this.run.enemies[0]; if(!t) return;
+        let d = this.run.jelly.atk;
+        let c = Math.random() < this.run.jelly.crit; if(c) d *= this.run.jelly.critDmg;
+        const shotCount = 1 + this.run.jelly.multiShot;
+
+        for(let i=0; i<shotCount; i++) {
+            let offset = (i - (shotCount-1)/2) * 20; 
+            if(this.run.skills.fireball>0) this.proj(this.run.jelly.x+offset, this.run.jelly.y, t, 'fireball', d, '#bf616a', c);
+            if(this.run.skills.lightning>0 && Math.random()<0.4) this.proj(this.run.jelly.x+offset, this.run.jelly.y, t, 'lightning', d*0.8, '#ebcb8b', c);
+        }
+    },
+    proj(x,y,t,type,dmg,color,crit) {
+        this.run.projectiles.push({x:x, y:y, vx:0, vy:0, spd:8, target:t, r:8, type:type, dmg:dmg, c:color, crit:crit});
+    },
+    dmg(e, amt, crit) {
+        e.hp -= amt;
+        this.floatText(Math.floor(amt), e.x, e.y-20, crit?'#ebcb8b':'#fff', crit?24:16);
+        if(e.hp<=0 && !e.dead) {
+            e.dead=true; this.run.enemies=this.run.enemies.filter(x=>!x.dead); this.run.enemiesKilled++;
+            this.run.gold += Math.floor((2+this.run.wave*0.5)*Meta.getStats().goldMult);
+            this.run.exp += 3;
+            if(this.run.exp>=this.run.nextExp) this.lvlUp();
+            this.part(e.x, e.y, 8, '#fff');
+        }
+    },
+    lvlUp() {
+        this.state = 'PAUSED'; this.run.level++; this.run.exp-=this.run.nextExp; this.run.nextExp=Math.floor(this.run.nextExp*1.3);
+        const box = document.getElementById('skill-options'); box.innerHTML='';
+        const list = [
+            {k:'fireball',n:'🔥 火球術',d:'範圍傷害'},
+            {k:'ice',n:'❄️ 冰霜場',d:'全場緩速'},
+            {k:'lightning',n:'⚡ 閃電鏈',d:'多重攻擊'}
+        ];
+        list.forEach(s=>{
+            box.innerHTML += `<div class="skill-card" onclick="Game.upSkill('${s.k}')"><h3>${s.n}</h3><div class="skill-desc">${s.d} Lv.${this.run.skills[s.k]+1}</div></div>`;
         });
+        document.getElementById('skill-screen').classList.remove('hidden');
     },
-
-    shoot() {
-        let target = this.enemies[0]; // 簡單瞄準第一個
-        if (!target) return; // 沒敵人不射擊
-
-        let count = 1 + this.player.multiShot;
-        for(let i=0; i<count; i++) {
-            let angle = Math.atan2(target.y - this.player.y, target.x - this.player.x);
-            // 散佈射擊
-            angle += (i - (count-1)/2) * 0.2; 
-            
-            this.projectiles.push({
-                x: this.player.x, y: this.player.y,
-                vx: Math.cos(angle) * 10,
-                vy: Math.sin(angle) * 10,
-                r: 6, color: '#ebcb8b', dmg: this.player.atk, dead: false
-            });
-        }
+    upSkill(k) { this.run.skills[k]++; document.getElementById('skill-screen').classList.add('hidden'); this.state='PLAYING'; this.lastTime=performance.now(); },
+    explode(x,y,r,dmg) { this.part(x,y,10,'#bf616a'); this.run.enemies.forEach(e=>{ if(Math.hypot(e.x-x, e.y-y)<r+e.r) this.dmg(e,dmg,false); }); },
+    part(x,y,c,color) { for(let i=0;i<c;i++) this.run.particles.push({x:x, y:y, vx:(Math.random()-0.5)*5, vy:(Math.random()-0.5)*5, life:300, c:color}); },
+    floatText(t,x,y,c,s=16) { this.run.texts.push({x:x, y:y, t:t, c:c, s:s, life:500}); },
+    gameOver() {
+        this.state='GAMEOVER'; SaveData.gold+=this.run.gold; SaveData.sp+=Math.floor(this.run.wave/3); Meta.save();
+        document.getElementById('go-wave').innerText=this.run.wave; document.getElementById('go-gold').innerText=this.run.gold; document.getElementById('go-sp').innerText=Math.floor(this.run.wave/3);
+        document.getElementById('game-over-screen').classList.remove('hidden');
     },
-
-    dealDamage(e, dmg) {
-        let isCrit = Math.random() < this.player.crit;
-        if(isCrit) dmg *= 1.5;
-        e.hp -= dmg;
-        this.spawnText(e.x, e.y-20, Math.floor(dmg), isCrit?'#ebcb8b':'#fff');
-        if(e.hp <= 0) {
-            e.dead = true;
-            this.wave += 0.1; // 殺敵推進波數進度
-            if(Math.floor(this.wave) > Math.floor(this.wave-0.1)) {
-                 this.spawnText(this.width/2, this.height/3, "WAVE UP!", "#88c0d0", 30);
-            }
-        }
+    updateHUD() {
+        document.getElementById('wave-display').innerText=this.run.wave; document.getElementById('gold-display-game').innerText=this.run.gold; document.getElementById('level-display').innerText=this.run.level;
+        document.getElementById('wall-hp-bar').style.width=`${(this.run.wall.hp/this.run.wall.maxHp)*100}%`;
+        document.getElementById('wall-hp-text').innerText=`${Math.floor(Math.max(0,this.run.wall.hp))}/${Math.floor(this.run.wall.maxHp)}`;
+        document.getElementById('exp-bar').style.width=`${(this.run.exp/this.run.nextExp)*100}%`;
     },
-
-    spawnParticle(x, y, count, color) {
-        for(let i=0; i<count; i++) {
-            this.particles.push({
-                x:x, y:y,
-                vx: (Math.random()-0.5)*5, vy: (Math.random()-0.5)*5,
-                life: 300, color: color
-            });
-        }
-    },
-
-    spawnText(x, y, text, color, size=16) {
-        this.damageTexts.push({ x:x, y:y, text:text, color:color, life:500, size:size });
-    }
+    returnToMenu() { this.state='MENU'; document.getElementById('hud').classList.add('hidden'); document.getElementById('game-over-screen').classList.add('hidden'); document.getElementById('main-menu').classList.remove('hidden'); Meta.updateUI(); }
 };
 
 Game.init();
